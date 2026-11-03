@@ -48,6 +48,7 @@ class _SettlementPageState extends State<SettlementPage> {
       final page = await db.from(table).select(columns)
           .eq('group_id', widget.groupId)
           .order(table == 'trip_expenses' ? 'created_at' : 'expense_id')
+          .order(table == 'trip_expenses' ? 'id' : 'user_id')
           .range(offset, offset + pageSize - 1);
       rows.addAll(page.map((item) => Map<String, dynamic>.from(item)));
       if (page.length < pageSize) break;
