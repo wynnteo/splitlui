@@ -141,5 +141,9 @@
   "inviteInvalidCode": "请贴上有效的邀请码或完整邀请消息。",
   "expenseFundAvailable": "共同基金可用余额",
   "expenseFundInsufficient": "共同基金余额不足，请先补款或更换付款人。",
-  "expenseFundNoSplit": "由共同基金付款，不会另外分摊给成员，也不会产生个人欠款。"
+  "expenseFundNoSplit": "由共同基金付款，不会另外分摊给成员，也不会产生个人欠款。",
+  "settlementDisplayCurrency": "还款显示货币",
+  "settlementOriginalBalance": "原本欠款",
+  "settlementEstimateDisclaimer": "换算金额仅根据群组约定汇率估算。付款前请确认金额及货币。",
+  "settlementLedgerNote": "已确认的还款仍以群组消费货币记录"
 }
