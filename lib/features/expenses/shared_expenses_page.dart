@@ -311,7 +311,9 @@ class AddSharedExpensePage extends StatefulWidget {
     super.key, required this.api, required this.groupId,
     required this.currency, required this.members,
     required this.groupRate, required this.settlementCurrency,
+    this.initialExpense,
   });
+  final Map<String,dynamic>? initialExpense;
   final SharedExpenseApi api;
   final String groupId, currency, settlementCurrency;
   final double groupRate;
@@ -335,6 +337,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   late String expenseCurrency;
   bool saving = false;
   bool readingReceipt = false;
+  DateTime? receiptDate;
+  bool currencyManuallySet = false;
   ReceiptDraft? receipt;
   final receiptStorage = ReceiptStorage();
 
@@ -350,6 +354,18 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         if (amount.text.trim().isEmpty && picked.suggestedTotal != null) {
           amount.text = picked.suggestedTotal!;
         }
+        if (title.text.trim().isEmpty && picked.hints.merchant != null) {
+          title.text = picked.hints.merchant!;
+        }
+        final detected = picked.hints.currency;
+        if (!currencyManuallySet && detected != null &&
+            currencies.contains(detected) && detected != expenseCurrency) {
+          expenseCurrency = detected;
+          exchangeRate.text = detected == widget.currency
+            ? '1' : detected == widget.settlementCurrency
+              ? widget.groupRate.toString() : '';
+        }
+        receiptDate ??= picked.hints.date;
       });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -361,14 +377,50 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
 
   @override void initState() {
     super.initState();
-    expenseCurrency = widget.currency;
-    exchangeRate.text = '1';
+    final original = widget.initialExpense;
+    expenseCurrency = original?['currency'] as String? ?? widget.currency;
+    if (!currencies.contains(expenseCurrency)) expenseCurrency = widget.currency;
+    exchangeRate.text = original?['rate_to_spending']?.toString() ?? '1';
+    if (original != null) {
+      title.text = original['title'] as String? ?? '';
+      amount.text = (original['amount'] as num).toStringAsFixed(2);
+      final dateText = original['receipt_date'] as String?;
+      receiptDate = dateText == null ? null : DateTime.tryParse(dateText);
+      currencyManuallySet = true;
+    }
     final ownId = Supabase.instance.client.auth.currentUser?.id;
     payer = widget.members.any((m) => m['user_id'] == ownId)
       ? ownId : (widget.members.isEmpty ? null :
           widget.members.first['user_id'] as String);
-    selected.addAll(widget.members.map((m) => m['user_id'] as String));
-    loadFund();
+    if (widget.initialExpense == null) {
+      selected.addAll(widget.members.map((m) => m['user_id'] as String));
+      loadFund();
+    } else {
+      payer = widget.initialExpense!['paid_by'] as String;
+      fundLoading = false;
+      loadExistingShares();
+    }
+  }
+
+  Future<void> loadExistingShares() async {
+    try {
+      final shares = await widget.api.shares(widget.initialExpense!['id'] as String);
+      if (mounted) setState(() {
+        selected..clear()..addAll(shares.map((x) => x['user_id'] as String));
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> chooseReceiptDate() async {
+    final picked = await showDatePicker(
+      context:context,
+      firstDate:DateTime(1990),
+      lastDate:DateTime.now().add(const Duration(days:1)),
+      initialDate:receiptDate ?? DateTime.now());
+    if (picked != null && mounted) setState(() => receiptDate = picked);
   }
 
   Future<void> loadFund() async {
@@ -403,6 +455,23 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
     setState(() => saving = true);
     try {
+      if (widget.initialExpense != null) {
+        await widget.api.edit(
+          groupId:widget.groupId,
+          original:widget.initialExpense!,
+          title:title.text,
+          amount:double.parse(amount.text.trim()),
+          currency:expenseCurrency,
+          rateToSpending:expenseCurrency == widget.currency
+            ? 1 : double.parse(exchangeRate.text.trim()),
+          paidBy:payer!,
+          participants:widget.members.map((m)=>m['user_id'] as String)
+            .where(selected.contains).toList(),
+          receiptDate:receiptDate,
+        );
+        if (mounted) Navigator.pop(context,true);
+        return;
+      }
       String createdId;
       if (payFromFund) {
         createdId = await widget.api.addFundPurchase(
@@ -426,6 +495,17 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               .map((m) => m['user_id'] as String)
               .where(selected.contains).toList(),
         );
+      }
+      if (receiptDate != null) {
+        // Metadata is separate for compatibility with existing expense RPCs.
+        // Do not attempt to re-create a committed expense if this fails.
+        try {
+          await widget.api.saveReceiptDate(
+            groupId:widget.groupId, date:receiptDate,
+            expenseId:payFromFund ? null : createdId,
+            fundEntryId:payFromFund ? createdId : null,
+          );
+        } catch (_) { /* Expense remains safely recorded. */ }
       }
       // The expense is already committed. A failed receipt upload must not
       // tempt users to create a duplicate charge by pressing Save again.
@@ -460,6 +540,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     if (value == null) return;
     setState(() {
       expenseCurrency = value;
+      currencyManuallySet = true;
       exchangeRate.text = value == widget.currency
         ? '1'
         : value == widget.settlementCurrency
@@ -483,7 +564,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   @override Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l.addExpense)),
+      appBar: AppBar(title: Text(
+        widget.initialExpense == null ? l.addExpense : l.editExpense)),
       body: SafeArea(top: false, child: Form(key: form,
         child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
@@ -547,8 +629,20 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                 convertedAmount!.toStringAsFixed(2),
                 style: Theme.of(context).textTheme.bodyMedium),
           ],
+          const SizedBox(height: 16),
+          LuiFormLabel(l.expenseReceiptDate),
+          OutlinedButton.icon(
+            onPressed:saving ? null : chooseReceiptDate,
+            icon:const Icon(Icons.calendar_today_outlined),
+            label:Text(receiptDate == null ? l.expenseChooseDate :
+              '${receiptDate!.day.toString().padLeft(2,'0')}/'
+              '${receiptDate!.month.toString().padLeft(2,'0')}/'
+              '${receiptDate!.year}'),
+          ),
           const SizedBox(height: 22),
+          if (widget.initialExpense == null)
           LuiFormLabel(l.receiptAttachment),
+          if (widget.initialExpense == null)
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -586,7 +680,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           )),
           const SizedBox(height: 22),
           LuiFormLabel(l.paidBy),
-          if (!fundLoading && (fundAvailable ?? 0) > 0) ...[
+          if (widget.initialExpense == null &&
+              !fundLoading && (fundAvailable ?? 0) > 0) ...[
             Card(child: SwitchListTile.adaptive(
               title: Text(l.fund),
               subtitle: Text(l.expenseFundAvailable + ': ' +
@@ -649,7 +744,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
             child: saving
               ? const SizedBox(height: 20, width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l.saveExpense),
+              : Text(widget.initialExpense == null
+                ? l.saveExpense : l.saveChanges),
           ),
         ]),
       )),
