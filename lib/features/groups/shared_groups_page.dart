@@ -125,7 +125,7 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         initial: initial,
         cancelLabel: l.cloudCancel,
         confirmLabel: l.cloudContinue,
-        maxLength: hint == l.cloudNicknameHint ? 60 : 80,
+        maxLength: hint == l.cloudNicknameHint ? 60 : (hint == l.cloudInviteHint ? 2000 : 80),
       ),
     );
   }
