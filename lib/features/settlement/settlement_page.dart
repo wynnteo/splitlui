@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'settlement_calculator.dart';
+import 'expense_currency_summary.dart';
 import 'paynow_settings_page.dart';
 
 /// Settlement preview only: no transfer is executed or marked as paid.
@@ -27,6 +28,7 @@ class _SettlementPageState extends State<SettlementPage> {
   bool showSettlementCurrency = true;
   String? error;
   SettlementResult? result;
+  ExpenseCurrencySummary? expenseSummary;
   List<Map<String, dynamic>> repayments = [];
   Map<String,String> payNowMobiles = {};
   final payNowApi = GroupPayNowApi();
@@ -68,12 +70,18 @@ class _SettlementPageState extends State<SettlementPage> {
     if (mounted) setState(() { busy = true; error = null; });
     try {
       final expenses = await readAll('trip_expenses',
-          'id,paid_by,amount_spending');
+          'id,paid_by,amount,currency,amount_spending');
       final shares = await readAll('trip_expense_shares',
           'expense_id,user_id,share_spending');
       final receiptRows = await readAll('trip_repayments',
         'id,from_user_id,to_user_id,amount_spending,note,created_at');
       final payNowRows = await payNowApi.getAll(widget.groupId);
+      final summary = ExpenseCurrencySummary.calculate(
+        expenses: expenses,
+        spendingCurrency: widget.spendingCurrency,
+        settlementCurrency: widget.settlementCurrency,
+        spendingPerSettlement: widget.exchangeRate,
+      );
       final calculated = SettlementCalculator.calculate(
         memberIds: widget.members.map((m) => m['user_id'] as String).toList(),
         expenses: expenses,
@@ -82,11 +90,16 @@ class _SettlementPageState extends State<SettlementPage> {
       );
       if (mounted) setState(() {
         result = calculated;
+        expenseSummary = summary;
         repayments = receiptRows;
         payNowMobiles = payNowRows;
       });
     } catch (e) {
-      if (mounted) setState(() { error = e.toString(); result = null; });
+      if (mounted) setState(() {
+        error = e.toString();
+        result = null;
+        expenseSummary = null;
+      });
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -383,18 +396,45 @@ class _SettlementPageState extends State<SettlementPage> {
             child: Text(error!, style: TextStyle(color: colors.error)),
           )),
           if (!busy && result != null) ...[
-            Card(child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l.settlementTotalExpenses,
-                    style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 8),
-                  Text(amount(result!.totalExpenseCents),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700)),
-                ]),
-            )),
+            if (expenseSummary != null)
+              Card(child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.settlementTotalExpenses,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 12),
+                    for (final item in expenseSummary!.totals) ...[
+                      Row(children: [
+                        Expanded(child: Text(
+                          item.currency + ' · ' + l.expenseOriginalTotal)),
+                        Text(item.currency + ' ' +
+                          (item.cents / 100).toStringAsFixed(2),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ]),
+                      const SizedBox(height: 10),
+                    ],
+                    if (expenseSummary!.totals.isEmpty)
+                      Text(l.noExpenses,
+                        style: Theme.of(context).textTheme.bodySmall),
+                    const Divider(height: 24),
+                    Text(l.expenseCombinedTotal + ' (' +
+                      expenseSummary!.totalSettlementCurrency + ')',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 6),
+                    Text('≈ ' + expenseSummary!.totalSettlementCurrency +
+                      ' ' + (expenseSummary!.totalSettlementCents / 100)
+                        .toStringAsFixed(2),
+                      style: Theme.of(context).textTheme.headlineMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    Text(expenseSummary!.usesOtherCurrencyRates
+                        ? l.expenseCombinedRateMixed
+                        : l.expenseCombinedRateNote,
+                      style: Theme.of(context).textTheme.bodySmall),
+                  ]),
+              )),
             const SizedBox(height: 26),
             LuiSectionHeading(title: l.settlementSuggestedTransfers),
             const SizedBox(height: 10),
