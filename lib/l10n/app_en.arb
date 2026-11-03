@@ -161,5 +161,12 @@
   "repaymentRateHint": "Record the currency and amount actually received. For a different currency, enter the agreed rate; no live exchange rate is assumed.",
   "repaymentLedgerEquivalent": "Amount credited against debt",
   "repaymentOutstanding": "Outstanding balance",
-  "repaymentExceedsOutstanding": "The converted repayment exceeds the outstanding balance. Record a smaller amount."
+  "repaymentExceedsOutstanding": "The converted repayment exceeds the outstanding balance. Record a smaller amount.",
+  "repaymentUndo": "Undo confirmation",
+  "repaymentUndoWarning": "Only undo if the payment was recorded incorrectly. This restores the debt and keeps a permanent reversal record; it does not reverse any bank transfer.",
+  "repaymentReversalReason": "Reason for reversal",
+  "repaymentReversalReasonHint": "e.g. Wrong amount recorded",
+  "repaymentReversalReasonInvalid": "Enter a reason (at least 3 characters).",
+  "repaymentUndoConfirm": "Confirm reversal",
+  "repaymentReversed": "Reversed — debt restored"
 }
