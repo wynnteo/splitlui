@@ -269,6 +269,31 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     }
   }
 
+  Future<void> showQueuedExpense(Map<String,Object?> item) async {
+    final l=AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context:context,showDragHandle:true,useSafeArea:true,
+      builder:(ctx)=>Padding(
+        padding:const EdgeInsets.fromLTRB(20,8,20,26),
+        child:Column(mainAxisSize:MainAxisSize.min,
+          crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(item['title'] as String,
+              style:Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height:12),
+            Text('${item['currency']} ${item['amount']}'),
+            const SizedBox(height:12),
+            Text(l.offlinePendingDetails,
+              style:Theme.of(context).textTheme.bodySmall),
+            if (item['last_error'] != null) ...[
+              const SizedBox(height:12),
+              SelectableText(item['last_error'] as String,
+                style:Theme.of(context).textTheme.bodySmall),
+            ],
+          ]),
+      ),
+    );
+  }
+
   Future<void> showCachedExpense(Map<String,dynamic> expense) async {
     final l = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
@@ -448,6 +473,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                     : l.offlinePending),
                 trailing: Text('${item['currency']} ${item['amount']}',
                   style: const TextStyle(fontWeight: FontWeight.w700)),
+                onTap: () => showQueuedExpense(item),
               )),
               const SizedBox(height: 8),
             ],
