@@ -379,10 +379,10 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           );
         } catch (_) {
           if (mounted) {
+            final messenger = ScaffoldMessenger.of(context);
+            final message = l.receiptUploadFailed;
             Navigator.pop(context, true);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(
-                AppLocalizations.of(context)!.receiptUploadFailed)));
+            messenger.showSnackBar(SnackBar(content: Text(message)));
           }
           return;
         }
