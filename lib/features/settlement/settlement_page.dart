@@ -125,12 +125,21 @@ class _SettlementPageState extends State<SettlementPage> {
       ..writeln(l.payNowRequestTo + ': ' + sender)
       ..writeln(l.payNowRecipient + ': ' + recipient)
       ..writeln(l.payNowAmountDue + ': ' + amount(transfer.cents));
+    if (widget.spendingCurrency != 'SGD' &&
+        widget.settlementCurrency == 'SGD' &&
+        widget.exchangeRate.isFinite && widget.exchangeRate > 0) {
+      content.writeln(l.payNowEstimatedSgd + ': ≈ SGD ' +
+          (transfer.cents / 100 / widget.exchangeRate).toStringAsFixed(2));
+    }
     if (phone != null && phone.isNotEmpty) {
       content
         ..writeln('PayNow: +65 ' + phone)
         ..writeln(l.payNowVerifyRecipient);
     } else {
       content.writeln(l.payNowNoDetailsShared);
+    }
+    if (widget.spendingCurrency != 'SGD') {
+      content.writeln(l.payNowAgreeSgd);
     }
     content.writeln(l.payNowNotPayment);
     return content.toString().trimRight();
