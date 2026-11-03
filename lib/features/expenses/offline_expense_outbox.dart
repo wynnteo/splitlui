@@ -61,6 +61,22 @@ class OfflineExpenseOutbox {
             PRIMARY KEY(user_id, group_id)
           )
         ''');
+        await db.execute('''
+          CREATE TABLE offline_group_cache(
+            user_id TEXT PRIMARY KEY,
+            groups_json TEXT NOT NULL,
+            saved_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE offline_member_cache(
+            user_id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            members_json TEXT NOT NULL,
+            saved_at TEXT NOT NULL,
+            PRIMARY KEY(user_id, group_id)
+          )
+        ''');
       });
     _database = db;
     return db;
@@ -116,6 +132,38 @@ class OfflineExpenseOutbox {
       if (path != null) { try { await File(path).delete(); } catch (_) {} }
       rethrow;
     }
+  }
+
+  Future<void> cacheGroups(List<Map<String,dynamic>> groups) async {
+    await (await database).insert('offline_group_cache',{
+      'user_id':_userId, 'groups_json':jsonEncode(groups),
+      'saved_at':DateTime.now().toUtc().toIso8601String(),
+    },conflictAlgorithm:ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String,dynamic>>> cachedGroups() async {
+    final rows=await (await database).query('offline_group_cache',
+      where:'user_id=?',whereArgs:[_userId],limit:1);
+    if(rows.isEmpty) return [];
+    return (jsonDecode(rows.first['groups_json'] as String) as List)
+      .map((e)=>Map<String,dynamic>.from(e as Map)).toList();
+  }
+
+  Future<void> cacheMembers(
+    String groupId, List<Map<String,dynamic>> members) async {
+    await (await database).insert('offline_member_cache',{
+      'user_id':_userId,'group_id':groupId,
+      'members_json':jsonEncode(members),
+      'saved_at':DateTime.now().toUtc().toIso8601String(),
+    },conflictAlgorithm:ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String,dynamic>>> cachedMembers(String groupId) async {
+    final rows=await (await database).query('offline_member_cache',
+      where:'user_id=? AND group_id=?',whereArgs:[_userId,groupId],limit:1);
+    if(rows.isEmpty) return [];
+    return (jsonDecode(rows.first['members_json'] as String) as List)
+      .map((e)=>Map<String,dynamic>.from(e as Map)).toList();
   }
 
   Future<void> cacheExpenses(
