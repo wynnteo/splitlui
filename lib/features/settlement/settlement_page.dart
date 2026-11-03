@@ -229,13 +229,19 @@ class _SettlementPageState extends State<SettlementPage> {
                   style: Theme.of(context).textTheme.bodySmall),
               ],
             )),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text(shownAmount(totalCents), style: Theme.of(context)
-                .textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-              if (secondaryAmount(totalCents) != null)
-                Text(secondaryAmount(totalCents)!,
-                  style: Theme.of(context).textTheme.bodySmall),
-            ]),
+            const SizedBox(width: 8),
+            Flexible(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(shownAmount(totalCents),
+                  textAlign: TextAlign.end,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700)),
+                if (secondaryAmount(totalCents) != null)
+                  Text(secondaryAmount(totalCents)!,
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.bodySmall),
+              ],
+            )),
           ]),
           const SizedBox(height: 12),
           if (payNow != null && payNow.isNotEmpty)
