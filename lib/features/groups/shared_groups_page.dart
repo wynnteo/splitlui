@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart' show CreateGroup, Group;
+import '../expenses/shared_expenses_page.dart';
 import '../../ui/lui_style.dart';
 
 class SharedGroupApi {
@@ -292,6 +293,21 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
               label: Text(l.cloudResetInvite)),
           ]),
         )),
+        const SizedBox(height: 24),
+        LuiFeatureTile(
+          icon: Icons.receipt_long_outlined,
+          title: l.expenses,
+          subtitle: l.expenseEntryHint,
+          onTap: busy || error != null ? null : () =>
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => SharedExpensesPage(
+                groupId: widget.group['id'] as String,
+                groupName: widget.group['name'] as String,
+                currency: widget.group['spending_currency'] as String,
+                members: members,
+              ),
+            )),
+        ),
         const SizedBox(height: 28),
         LuiSectionHeading(title: l.members),
         const SizedBox(height: 12),
@@ -304,9 +320,6 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           ),
           const SizedBox(height: 10),
         ],
-        const SizedBox(height: 16),
-        Text(l.cloudExpenseNext,
-          style: Theme.of(context).textTheme.bodySmall),
       ]),
     );
   }
