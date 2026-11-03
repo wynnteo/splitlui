@@ -477,6 +477,8 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
                 groupId: group['id'] as String,
                 groupName: group['name'] as String,
                 currency: group['spending_currency'] as String,
+                settlementCurrency: group['settlement_currency'] as String,
+                groupRate: (group['exchange_rate'] as num).toDouble(),
                 members: members,
               ),
             )),
