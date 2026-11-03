@@ -47,5 +47,8 @@
   "cloudIdentityWarning": "Guest accounts are device-bound. Clearing app data may lose access. Account recovery will be added later.",
   "cloudExpenseNext": "Expenses, common funds and automatic settlements are coming next.",
   "cloudNotConfigured": "Shared groups need Supabase configuration before they can be used.",
-  "nameHint": "e.g. Weekend in Tokyo"
+  "nameHint": "e.g. Weekend in Tokyo",
+  "settingsIntro": "Personalise your SplitLui experience.",
+  "appearanceHint": "Choose how SplitLui looks on your device.",
+  "languageHint": "Select your preferred app language."
 }
