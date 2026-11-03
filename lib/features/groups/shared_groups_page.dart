@@ -122,6 +122,7 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         initial: initial,
         cancelLabel: l.cloudCancel,
         confirmLabel: l.cloudContinue,
+        maxLength: hint == l.cloudNicknameHint ? 60 : 80,
       ),
     );
   }
@@ -393,6 +394,7 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
         hint: l.typeGroupName + ': ' + (group['name'] as String),
         initial: '',
         cancelLabel: l.cloudCancel, confirmLabel: l.deleteGroup,
+        maxLength: 120,
       ),
     );
     if (!mounted || confirmedName == null) return;
@@ -477,6 +479,8 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
                 groupId: group['id'] as String,
                 groupName: group['name'] as String,
                 currency: group['spending_currency'] as String,
+                settlementCurrency: group['settlement_currency'] as String,
+                groupRate: (group['exchange_rate'] as num).toDouble(),
                 members: members,
               ),
             )),
@@ -520,8 +524,10 @@ class _SharedGroupTextDialog extends StatefulWidget {
   const _SharedGroupTextDialog({
     required this.title, required this.hint, required this.initial,
     required this.cancelLabel, required this.confirmLabel,
+    this.maxLength = 80,
   });
   final String title, hint, initial, cancelLabel, confirmLabel;
+  final int maxLength;
 
   @override
   State<_SharedGroupTextDialog> createState() => _SharedGroupTextDialogState();
@@ -547,7 +553,7 @@ class _SharedGroupTextDialogState extends State<_SharedGroupTextDialog> {
     title: Text(widget.title),
     content: TextField(
       controller: controller,
-      maxLength: 80,
+      maxLength: widget.maxLength,
       autofocus: true,
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(hintText: widget.hint),

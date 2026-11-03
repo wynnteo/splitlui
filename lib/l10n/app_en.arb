@@ -79,7 +79,6 @@
   "fundContributor": "Contributed by",
   "fundRecordActual": "Only record money actually received, not an amount someone promised to pay.",
   "fundNoDoubleSplit": "This payment uses common funds and will not create an individual split expense.",
-  "thaiBaht": "THB · Thai Baht (฿)",
   "localOnlyFeatures": "This group is saved only on this device. Expenses, Common Fund and member management work in Shared Groups, where everyone can join.",
   "openSharedGroups": "Open shared groups",
   "createLocalGroup": "Create local group",
@@ -92,5 +91,9 @@
   "olderDeviceGroupsHint": "These were created before group syncing. Move them online to use Expenses and Common Fund.",
   "moveToGroups": "Move to Groups",
   "deleteLocalGroup": "Delete device-only group?",
-  "deleteLocalWarning": "This removes the group from this phone. It cannot be recovered."
+  "deleteLocalWarning": "This removes the group from this phone. It cannot be recovered.",
+  "expenseCurrency": "Expense currency",
+  "expenseRateToGroup": "Exchange rate to group currency",
+  "groupEquivalent": "Equivalent in group currency",
+  "expenseConversionHint": "The exchange rate is saved with this expense. Original and converted shares are both recorded; conversions are rounded to two decimals."
 }

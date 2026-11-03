@@ -8,25 +8,27 @@ class SharedExpenseApi {
 
   Future<List<Map<String, dynamic>>> list(String groupId) async {
     final rows = await db.from('trip_expenses')
-        .select('id,title,amount,paid_by,created_at')
+        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_at')
         .eq('group_id', groupId).order('created_at', ascending: false);
     return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   Future<void> add({
     required String groupId, required String title,
-    required double amount, required String paidBy,
+    required double amount, required String currency,
+    required double rateToSpending, required String paidBy,
     required List<String> splitBetween,
   }) async {
-    await db.rpc('add_trip_expense', params: {
+    await db.rpc('add_trip_expense_v2', params: {
       'p_group': groupId, 'p_title': title.trim(), 'p_amount': amount,
+      'p_currency': currency, 'p_rate_to_spending': rateToSpending,
       'p_paid_by': paidBy, 'p_split_between': splitBetween,
     });
   }
 
   Future<List<Map<String, dynamic>>> shares(String expenseId) async {
     final rows = await db.from('trip_expense_shares')
-        .select('user_id,share_amount').eq('expense_id', expenseId);
+        .select('user_id,share_amount,share_spending').eq('expense_id', expenseId);
     return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 }
@@ -35,8 +37,11 @@ class SharedExpensesPage extends StatefulWidget {
   const SharedExpensesPage({
     super.key, required this.groupId, required this.groupName,
     required this.currency, required this.members,
+    required this.groupRate, required this.settlementCurrency,
   });
   final String groupId, groupName, currency;
+  final double groupRate;
+  final String settlementCurrency;
   final List<Map<String, dynamic>> members;
 
   @override State<SharedExpensesPage> createState() => _SharedExpensesPageState();
@@ -73,7 +78,9 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
     final added = await Navigator.push<bool>(context, MaterialPageRoute(
       builder: (_) => AddSharedExpensePage(
         api: api, groupId: widget.groupId,
-        currency: widget.currency, members: widget.members),
+        currency: widget.currency, members: widget.members,
+        groupRate: widget.groupRate,
+        settlementCurrency: widget.settlementCurrency),
     ));
     if (mounted && added == true) await refresh();
   }
@@ -92,6 +99,14 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                 style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(l.paidBy + ': ' + memberName(expense['paid_by'] as String?)),
+              if ((expense['currency'] as String? ?? widget.currency) != widget.currency) ...[
+                const SizedBox(height: 8),
+                Text(l.expenseRateToGroup + ': 1 ' +
+                  (expense['currency'] as String) + ' = ' +
+                  (expense['rate_to_spending'] as num).toString() + ' ' +
+                  widget.currency,
+                  style: Theme.of(context).textTheme.bodySmall),
+              ],
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
@@ -103,9 +118,20 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(memberName(share['user_id'] as String?)),
-                    trailing: Text(widget.currency + ' ' +
-                      (share['share_amount'] as num).toStringAsFixed(2),
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                    trailing: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text((expense['currency'] as String? ?? widget.currency) +
+                          ' ' + (share['share_amount'] as num).toStringAsFixed(2),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                        if ((expense['currency'] as String? ?? widget.currency)
+                            != widget.currency)
+                          Text(widget.currency + ' ' +
+                            (share['share_spending'] as num).toStringAsFixed(2),
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
                   ),
             ]),
         )),
@@ -143,9 +169,20 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
               title: expense['title'] as String,
               subtitle: l.paidBy + ': ' +
                 memberName(expense['paid_by'] as String?),
-              trailing: Text(widget.currency + ' ' +
-                (expense['amount'] as num).toStringAsFixed(2),
-                style: const TextStyle(fontWeight: FontWeight.w700)),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text((expense['currency'] as String? ?? widget.currency) +
+                    ' ' + (expense['amount'] as num).toStringAsFixed(2),
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                  if ((expense['currency'] as String? ?? widget.currency)
+                    != widget.currency)
+                    Text(widget.currency + ' ' +
+                      (expense['amount_spending'] as num).toStringAsFixed(2),
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
               onTap: () => showShares(expense),
             ),
             const SizedBox(height: 10),
@@ -159,9 +196,11 @@ class AddSharedExpensePage extends StatefulWidget {
   const AddSharedExpensePage({
     super.key, required this.api, required this.groupId,
     required this.currency, required this.members,
+    required this.groupRate, required this.settlementCurrency,
   });
   final SharedExpenseApi api;
-  final String groupId, currency;
+  final String groupId, currency, settlementCurrency;
+  final double groupRate;
   final List<Map<String, dynamic>> members;
   @override State<AddSharedExpensePage> createState() => _AddSharedExpensePageState();
 }
@@ -171,11 +210,18 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   final title = TextEditingController();
   final amount = TextEditingController();
   final selected = <String>{};
+  final exchangeRate = TextEditingController();
+  static const currencies = [
+    'SGD','JPY','MYR','THB','USD','EUR','GBP','KRW','TWD','IDR','CNY','AUD',
+  ];
   String? payer;
+  late String expenseCurrency;
   bool saving = false;
 
   @override void initState() {
     super.initState();
+    expenseCurrency = widget.currency;
+    exchangeRate.text = '1';
     final ownId = Supabase.instance.client.auth.currentUser?.id;
     payer = widget.members.any((m) => m['user_id'] == ownId)
       ? ownId : (widget.members.isEmpty ? null :
@@ -184,7 +230,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   @override void dispose() {
-    title.dispose(); amount.dispose(); super.dispose();
+    title.dispose(); amount.dispose(); exchangeRate.dispose(); super.dispose();
   }
 
   Future<void> save() async {
@@ -199,7 +245,11 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     try {
       await widget.api.add(
         groupId: widget.groupId, title: title.text,
-        amount: double.parse(amount.text.trim()), paidBy: payer!,
+        amount: double.parse(amount.text.trim()),
+        currency: expenseCurrency,
+        rateToSpending: expenseCurrency == widget.currency
+          ? 1 : double.parse(exchangeRate.text.trim()),
+        paidBy: payer!,
         splitBetween: widget.members.map((m) => m['user_id'] as String)
           .where(selected.contains).toList(),
       );
@@ -210,6 +260,30 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     } finally {
       if (mounted) setState(() => saving = false);
     }
+  }
+
+  void chooseCurrency(String? value) {
+    if (value == null) return;
+    setState(() {
+      expenseCurrency = value;
+      exchangeRate.text = value == widget.currency
+        ? '1'
+        : value == widget.settlementCurrency
+          ? widget.groupRate.toString()
+          : '';
+    });
+  }
+
+  double? get convertedAmount {
+    final original = double.tryParse(amount.text.trim());
+    final rate = expenseCurrency == widget.currency
+      ? 1.0 : double.tryParse(exchangeRate.text.trim());
+    if (original == null || rate == null || !original.isFinite ||
+      !rate.isFinite || original <= 0 || rate <= 0) return null;
+    final converted = original * rate;
+    if (!converted.isFinite || converted <= 0 ||
+      converted > 9999999999999999) return null;
+    return (converted * 100).round() / 100;
   }
 
   @override Widget build(BuildContext context) {
@@ -229,7 +303,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           TextFormField(
             controller: amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(prefixText: widget.currency + ' '),
+            decoration: InputDecoration(prefixText: expenseCurrency + ' '),
+            onChanged: (_) => setState(() {}),
             validator: (v) {
               final raw = (v ?? '').trim();
               final n = double.tryParse(raw);
@@ -239,6 +314,43 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               return null;
             },
           ),
+          const SizedBox(height: 18),
+          LuiFormLabel(l.expenseCurrency),
+          DropdownButtonFormField<String>(
+            value: expenseCurrency,
+            isExpanded: true,
+            decoration: const InputDecoration(),
+            items: currencies.map((c) =>
+              DropdownMenuItem(value: c, child: Text(c))).toList(),
+            onChanged: saving ? null : chooseCurrency,
+          ),
+          if (expenseCurrency != widget.currency) ...[
+            const SizedBox(height: 18),
+            LuiFormLabel(l.expenseRateToGroup),
+            TextFormField(
+              controller: exchangeRate,
+              keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                helperText: '1 ' + expenseCurrency + ' = ? ' + widget.currency,
+                helperMaxLines: 2,
+              ),
+              validator: (v) {
+                final text = (v ?? '').trim();
+                final n = double.tryParse(text);
+                if (!RegExp(r'^\d+(\.\d{1,8})?$').hasMatch(text)
+                    || n == null || !n.isFinite || n <= 0
+                    || n > 99999999999999) return l.invalid;
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            if (convertedAmount != null)
+              Text(l.groupEquivalent + ': ' + widget.currency + ' ' +
+                convertedAmount!.toStringAsFixed(2),
+                style: Theme.of(context).textTheme.bodyMedium),
+          ],
           const SizedBox(height: 22),
           LuiFormLabel(l.paidBy),
           DropdownButtonFormField<String>(
@@ -269,6 +381,11 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           const SizedBox(height: 12),
           Text(l.equalSplitOnly,
             style: Theme.of(context).textTheme.bodySmall),
+          if (expenseCurrency != widget.currency) ...[
+            const SizedBox(height: 8),
+            Text(l.expenseConversionHint,
+              style: Theme.of(context).textTheme.bodySmall),
+          ],
           const SizedBox(height: 28),
           FilledButton(
             onPressed: saving ? null : save,
