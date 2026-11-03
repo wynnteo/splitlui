@@ -32,6 +32,7 @@ create table if not exists public.trip_fund_refunds (
   group_id uuid not null references public.trip_groups(id) on delete cascade,
   member_id uuid not null references auth.users(id),
   amount numeric(18,2) not null check (amount > 0),
+  client_operation_id uuid not null unique,
   note text not null check (char_length(btrim(note)) between 3 and 120),
   confirmed_by uuid not null references auth.users(id),
   created_at timestamptz not null default now()
@@ -88,7 +89,7 @@ grant execute on function public.set_trip_fund_target(uuid,uuid,numeric)
 
 -- Requests are communication, not incoming funds. Owner can cancel one.
 create or replace function public.request_trip_fund_topup(
-  p_group uuid,p_member uuid,p_amount numeric,p_note text
+  p_group uuid,p_member uuid,p_amount numeric,p_note text,p_operation uuid
 ) returns uuid language plpgsql security definer
 set search_path = '' as $$
 declare new_id uuid;
@@ -149,6 +150,7 @@ declare
   contributed numeric(18,2);
   already_refunded numeric(18,2);
   result_id uuid;
+  prior public.trip_fund_refunds%rowtype;
 begin
   if auth.uid() is null or not exists(
     select 1 from public.trip_members where group_id=p_group
@@ -158,6 +160,7 @@ begin
     where group_id=p_group and user_id=p_member) then
     raise exception 'Refund recipient is not a group member';
   end if;
+  if p_operation is null then raise exception 'Operation ID required'; end if;
   if p_amount is null or p_amount <= 0 or p_amount > 99999999999999.99
     or p_amount != round(p_amount,2) then
     raise exception 'Invalid refund amount';
@@ -168,6 +171,16 @@ begin
   select balance into balance_now from public.trip_fund_accounts
     where group_id=p_group for update;
   if not found then raise exception 'Fund account not found'; end if;
+  select * into prior from public.trip_fund_refunds
+    where client_operation_id=p_operation;
+  if found then
+    if prior.group_id != p_group or prior.member_id != p_member
+       or prior.amount != p_amount or prior.note != btrim(p_note)
+       or prior.confirmed_by != auth.uid() then
+      raise exception 'Refund operation ID reused with different data';
+    end if;
+    return prior.id;
+  end if;
   if balance_now < p_amount then raise exception 'Insufficient fund balance'; end if;
 
   select coalesce(sum(amount),0) into contributed
@@ -183,15 +196,15 @@ begin
     balance=balance-p_amount,updated_at=clock_timestamp()
   where group_id=p_group;
   insert into public.trip_fund_refunds(
-    group_id,member_id,amount,note,confirmed_by)
-  values(p_group,p_member,p_amount,btrim(p_note),auth.uid())
+    group_id,member_id,amount,note,confirmed_by,client_operation_id)
+  values(p_group,p_member,p_amount,btrim(p_note),auth.uid(),p_operation)
   returning id into result_id;
   return result_id;
 end; $$;
 revoke all on function public.confirm_trip_fund_refund(
-  uuid,uuid,numeric,text) from public;
+  uuid,uuid,numeric,text,uuid) from public;
 grant execute on function public.confirm_trip_fund_refund(
-  uuid,uuid,numeric,text) to authenticated;
+  uuid,uuid,numeric,text,uuid) to authenticated;
 
 -- Refunds are standalone ledger events; future fund corrections must not
 -- remove them. There are no direct update/delete permissions on this table.
