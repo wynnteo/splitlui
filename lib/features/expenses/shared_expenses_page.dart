@@ -10,7 +10,7 @@ class SharedExpenseApi {
 
   Future<List<Map<String, dynamic>>> list(String groupId) async {
     final rows = await db.from('trip_expenses')
-        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_at')
+        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_by,created_at,updated_at,receipt_date')
         .eq('group_id', groupId).order('created_at', ascending: false);
     return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
@@ -52,6 +52,49 @@ class SharedExpenseApi {
       'p_paid_by': paidBy, 'p_split_between': splitBetween,
     });
     return id.toString();
+  }
+
+  Future<void> saveReceiptDate({
+    required String groupId, String? expenseId,
+    String? fundEntryId, required DateTime? date,
+  }) async {
+    await db.rpc('set_trip_receipt_date', params: {
+      'p_group': groupId, 'p_expense': expenseId,
+      'p_fund_entry': fundEntryId,
+      'p_date': date == null ? null :
+        '${date.year.toString().padLeft(4,'0')}-'
+        '${date.month.toString().padLeft(2,'0')}-'
+        '${date.day.toString().padLeft(2,'0')}',
+    });
+  }
+
+  Future<void> edit({
+    required String groupId, required Map<String,dynamic> original,
+    required String title, required double amount,
+    required String currency, required double rateToSpending,
+    required String paidBy, required List<String> participants,
+    DateTime? receiptDate,
+  }) async {
+    await db.rpc('edit_trip_expense',params: {
+      'p_group': groupId, 'p_expense': original['id'],
+      'p_expected_updated_at': original['updated_at'],
+      'p_title': title.trim(), 'p_amount': amount,
+      'p_currency':currency, 'p_rate_to_spending':rateToSpending,
+      'p_paid_by':paidBy,'p_split_between':participants,
+      'p_date': receiptDate == null ? null :
+          '${receiptDate.year.toString().padLeft(4,'0')}-'
+          '${receiptDate.month.toString().padLeft(2,'0')}-'
+          '${receiptDate.day.toString().padLeft(2,'0')}',
+    });
+  }
+
+  Future<void> delete({
+    required String groupId, required Map<String,dynamic> original,
+  }) async {
+    await db.rpc('delete_trip_expense',params: {
+      'p_group': groupId, 'p_expense': original['id'],
+      'p_expected_updated_at': original['updated_at'],
+    });
   }
 
   Future<List<Map<String, dynamic>>> shares(String expenseId) async {
