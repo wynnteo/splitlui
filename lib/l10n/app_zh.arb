@@ -146,5 +146,7 @@
   "settlementOriginalBalance": "原本欠款",
   "settlementEstimateDisclaimer": "换算金额仅根据群组约定汇率估算。付款前请确认金额及货币。",
   "settlementLedgerNote": "已确认的还款仍以群组消费货币记录",
-  "settlementConvertedEstimate": "换算参考金额"
+  "settlementConvertedEstimate": "换算参考金额",
+  "payNowReceivesFrom": "待收款",
+  "payNowFromMember": "付款人"
 }
