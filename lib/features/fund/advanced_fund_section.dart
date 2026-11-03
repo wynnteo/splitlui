@@ -68,10 +68,9 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
   }
   Future<String?> ask(String heading,{bool note=false,bool allowZero=false}) async {
     final l=AppLocalizations.of(context)!;
-    final input=TextEditingController();
     final key=GlobalKey<FormState>();
-    try {
-      return await showModalBottomSheet<String>(
+    var entered='';
+    return await showModalBottomSheet<String>(
         context:context,isScrollControlled:true,useSafeArea:true,
         showDragHandle:true,
         builder:(ctx)=>Padding(
@@ -81,7 +80,7 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
               crossAxisAlignment:CrossAxisAlignment.stretch,children:[
                 Text(heading,style:Theme.of(ctx).textTheme.titleLarge),
                 const SizedBox(height:14),
-                TextFormField(controller:input,autofocus:true,
+                TextFormField(autofocus:true,onChanged:(value)=>entered=value,
                   maxLength:note?120:null,
                   keyboardType:note?TextInputType.text:
                     const TextInputType.numberWithOptions(decimal:true),
@@ -101,14 +100,13 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
                 const SizedBox(height:16),
                 FilledButton(onPressed:(){
                   if(key.currentState?.validate()??false) {
-                    Navigator.pop(ctx,input.text.trim());
+                    Navigator.pop(ctx,entered.trim());
                   }
                 },child:Text(l.saveChanges)),
               ],
             ))),
           ),
         );
-    } finally {input.dispose();}
   }
   Future<void> perform(Future<dynamic> Function() action) async {
     if(busy)return;
