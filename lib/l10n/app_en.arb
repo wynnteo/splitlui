@@ -168,5 +168,11 @@
   "repaymentReversalReasonHint": "e.g. Wrong amount recorded",
   "repaymentReversalReasonInvalid": "Enter a reason (at least 3 characters).",
   "repaymentUndoConfirm": "Confirm reversal",
-  "repaymentReversed": "Reversed — debt restored"
+  "repaymentReversed": "Reversed — debt restored",
+  "receiptAttachment": "Receipt (optional)",
+  "receiptCamera": "Take photo",
+  "receiptGallery": "Choose photo",
+  "receiptRemove": "Remove photo",
+  "receiptReviewHint": "Text recognition is only a suggestion. Check the amount and currency before saving.",
+  "receiptUploadFailed": "Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again."
 }
