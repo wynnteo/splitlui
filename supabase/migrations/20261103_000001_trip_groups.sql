@@ -78,7 +78,7 @@ begin
   insert into public.trip_members(group_id,user_id,nickname,role)
     values (new_id,auth.uid(),btrim(p_nickname),'owner');
   insert into public.trip_invites(group_id,token)
-    values(new_id, encode(extensions.gen_random_bytes(20),'hex'));
+    values(new_id, replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-',''));
   return new_id;
 end; $$;
 revoke all on function public.create_trip_group(text,boolean,text,text,numeric,numeric,text) from public;
@@ -126,7 +126,7 @@ begin
     select 1 from public.trip_members
     where group_id=p_group and user_id=auth.uid() and role='owner'
   ) then raise exception 'Only the owner can reset invitations'; end if;
-  new_token := encode(extensions.gen_random_bytes(20),'hex');
+  new_token := replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-','');
   update public.trip_invites set token=new_token,created_at=now() where group_id=p_group;
   return new_token;
 end; $$;
