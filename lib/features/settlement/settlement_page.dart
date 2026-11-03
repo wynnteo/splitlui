@@ -23,6 +23,7 @@ class _SettlementPageState extends State<SettlementPage> {
   bool busy = true;
   String? error;
   SettlementResult? result;
+  List<Map<String, dynamic>> repayments = [];
 
   @override
   void initState() {
@@ -47,8 +48,8 @@ class _SettlementPageState extends State<SettlementPage> {
       // Explicit paging avoids PostgREST's default maximum 1000 rows.
       final page = await db.from(table).select(columns)
           .eq('group_id', widget.groupId)
-          .order(table == 'trip_expenses' ? 'created_at' : 'expense_id')
-          .order(table == 'trip_expenses' ? 'id' : 'user_id')
+          .order(table == 'trip_expense_shares' ? 'expense_id' : 'created_at', ascending: false)
+          .order(table == 'trip_expense_shares' ? 'user_id' : 'id')
           .range(offset, offset + pageSize - 1);
       rows.addAll(page.map((item) => Map<String, dynamic>.from(item)));
       if (page.length < pageSize) break;
@@ -64,17 +65,38 @@ class _SettlementPageState extends State<SettlementPage> {
           'id,paid_by,amount_spending');
       final shares = await readAll('trip_expense_shares',
           'expense_id,user_id,share_spending');
+      final receiptRows = await readAll('trip_repayments',
+        'id,from_user_id,to_user_id,amount_spending,note,created_at');
       final calculated = SettlementCalculator.calculate(
         memberIds: widget.members.map((m) => m['user_id'] as String).toList(),
         expenses: expenses,
         shares: shares,
+        repayments: receiptRows,
       );
-      if (mounted) setState(() => result = calculated);
+      if (mounted) setState(() {
+        result = calculated;
+        repayments = receiptRows;
+      });
     } catch (e) {
       if (mounted) setState(() { error = e.toString(); result = null; });
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  Future<void> recordReceipt(SuggestedTransfer transfer) async {
+    final recorded = await Navigator.push<bool>(context, MaterialPageRoute(
+      builder: (_) => RepaymentReceiptForm(
+        groupId: widget.groupId,
+        currency: widget.spendingCurrency,
+        senderName: nameOf(transfer.fromUserId),
+        receiverName: nameOf(transfer.toUserId),
+        fromUserId: transfer.fromUserId,
+        toUserId: transfer.toUserId,
+        maxCents: transfer.cents,
+      ),
+    ));
+    if (mounted && recorded == true) await refresh();
   }
 
   String amount(int cents) =>
@@ -169,9 +191,38 @@ class _SettlementPageState extends State<SettlementPage> {
                     if (settlementEstimate(transfer.cents) != null)
                       Text(settlementEstimate(transfer.cents)!,
                         style: Theme.of(context).textTheme.bodySmall),
+                    if (Supabase.instance.client.auth.currentUser?.id ==
+                        transfer.toUserId) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: busy ? null : () => recordReceipt(transfer),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: Text(l.repaymentConfirmReceived),
+                      ),
+                    ],
                   ],
                 ),
               )),
+              const SizedBox(height: 10),
+            ],
+            const SizedBox(height: 22),
+            LuiSectionHeading(title: l.repaymentHistory),
+            const SizedBox(height: 12),
+            if (repayments.isEmpty)
+              Text(l.repaymentNoRecords,
+                style: Theme.of(context).textTheme.bodySmall),
+            for (final receipt in repayments) ...[
+              LuiFeatureTile(
+                icon: Icons.task_alt_rounded,
+                title: nameOf(receipt['from_user_id'] as String) +
+                    ' → ' + nameOf(receipt['to_user_id'] as String),
+                subtitle: l.repaymentReceivedRecorded +
+                  ((receipt['note'] as String).isEmpty
+                    ? '' : ' · ' + (receipt['note'] as String)),
+                trailing: Text(widget.spendingCurrency + ' ' +
+                  (receipt['amount_spending'] as num).toStringAsFixed(2),
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 22),
@@ -196,10 +247,108 @@ class _SettlementPageState extends State<SettlementPage> {
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 20),
-            Text(l.settlementLimitations,
+            Text(l.repaymentLimitations,
               style: Theme.of(context).textTheme.bodySmall),
           ],
         ],
+      ),
+    );
+  }
+}
+
+
+class RepaymentReceiptForm extends StatefulWidget {
+  const RepaymentReceiptForm({
+    super.key, required this.groupId, required this.currency,
+    required this.senderName, required this.receiverName,
+    required this.fromUserId, required this.toUserId,
+    required this.maxCents,
+  });
+  final String groupId, currency, senderName, receiverName;
+  final String fromUserId, toUserId;
+  final int maxCents;
+  @override State<RepaymentReceiptForm> createState() => _RepaymentReceiptFormState();
+}
+
+class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
+  final formKey = GlobalKey<FormState>();
+  final amount = TextEditingController();
+  final note = TextEditingController();
+  bool saving = false;
+
+  @override void initState() {
+    super.initState();
+    amount.text = (widget.maxCents / 100).toStringAsFixed(2);
+  }
+
+  @override void dispose() {
+    amount.dispose();
+    note.dispose();
+    super.dispose();
+  }
+
+  Future<void> save() async {
+    if (saving || !(formKey.currentState?.validate() ?? false)) return;
+    setState(() => saving = true);
+    try {
+      await Supabase.instance.client.rpc('record_trip_repayment', params: {
+        'p_group': widget.groupId,
+        'p_from': widget.fromUserId,
+        'p_to': widget.toUserId,
+        'p_amount': double.parse(amount.text.trim()),
+        'p_note': note.text.trim(),
+      });
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.repaymentConfirmReceived)),
+      body: Form(key: formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          children: [
+            Text(widget.senderName + ' → ' + widget.receiverName,
+              style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 14),
+            Text(l.repaymentConfirmWarning,
+              style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 22),
+            LuiFormLabel(l.expenseAmount),
+            TextFormField(
+              controller: amount,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(prefixText: widget.currency + ' '),
+              validator: (raw) {
+                final value = (raw ?? '').trim();
+                final parsed = double.tryParse(value);
+                if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value) ||
+                    parsed == null || !parsed.isFinite || parsed <= 0 ||
+                    parsed > widget.maxCents / 100) return l.invalid;
+                return null;
+              },
+            ),
+            const SizedBox(height: 22),
+            LuiFormLabel(l.repaymentNote),
+            TextFormField(
+              controller: note, maxLength: 120,
+              decoration: InputDecoration(hintText: l.repaymentNoteHint),
+            ),
+            const SizedBox(height: 25),
+            FilledButton.icon(
+              onPressed: saving ? null : save,
+              icon: const Icon(Icons.verified_outlined),
+              label: Text(l.repaymentConfirmReceived),
+            ),
+          ],
+        ),
       ),
     );
   }
