@@ -50,5 +50,16 @@
   "nameHint": "e.g. Weekend in Tokyo",
   "settingsIntro": "Personalise your SplitLui experience.",
   "appearanceHint": "Choose how SplitLui looks on your device.",
-  "languageHint": "Select your preferred app language."
+  "languageHint": "Select your preferred app language.",
+  "addExpense": "Add expense",
+  "expenseTitle": "Expense name",
+  "expenseTitleHint": "e.g. Dinner",
+  "expenseAmount": "Amount",
+  "paidBy": "Paid by",
+  "splitBetween": "Split between",
+  "equalSplitOnly": "Equal split between selected members. Amounts are rounded to the nearest cent.",
+  "selectParticipants": "Select at least one person to split with.",
+  "saveExpense": "Save expense",
+  "noExpenses": "No expenses yet. Add the first expense to get started.",
+  "expenseEntryHint": "Add and review shared expenses"
 }
