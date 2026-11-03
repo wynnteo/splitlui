@@ -10,6 +10,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   shared_preferences: ^2.3.2
+  supabase_flutter: ^2.8.0
   intl: any
 dev_dependencies:
   flutter_test:
