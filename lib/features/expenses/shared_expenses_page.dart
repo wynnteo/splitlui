@@ -124,6 +124,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
   List<Map<String, dynamic>> expenses = [];
   List<Map<String,dynamic>> fundPurchases = [];
   List<Map<String,Object?>> queuedExpenses = [];
+  bool showingOfflineSnapshot = false;
   bool busy = true;
   String? error;
 
@@ -155,8 +156,16 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     try {
       // Pending entries always come from device storage first so they remain
       // visible even when connectivity is unavailable.
-      final before = await OfflineExpenseOutbox.instance.pending(widget.groupId);
-      if (mounted) setState(() => queuedExpenses = before);
+      final storage = OfflineExpenseOutbox.instance;
+      final before = await storage.pending(widget.groupId);
+      final cached = await storage.cachedExpenses(widget.groupId);
+      if (mounted) setState(() {
+        queuedExpenses = before;
+        if (cached.isNotEmpty && expenses.isEmpty) {
+          expenses = cached;
+          showingOfflineSnapshot = true;
+        }
+      });
       await OfflineExpenseOutbox.instance.sync(widget.groupId);
       final after = await OfflineExpenseOutbox.instance.pending(widget.groupId);
       if (mounted) setState(() => queuedExpenses = after);
@@ -164,9 +173,11 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
         api.list(widget.groupId),
         api.fundPurchases(widget.groupId),
       ]);
+      await storage.cacheExpenses(widget.groupId, result[0]);
       if (mounted) setState(() {
         expenses = result[0];
         fundPurchases = result[1];
+        showingOfflineSnapshot = false;
       });
     } catch (e) {
       if (mounted) {
@@ -362,6 +373,16 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
             onPressed: widget.members.isEmpty || busy ? null : createExpense,
             icon: const Icon(Icons.add_rounded), label: Text(l.addExpense)),
           const SizedBox(height: 16),
+          if (showingOfflineSnapshot)
+            Padding(
+              padding: const EdgeInsets.only(bottom:12),
+              child: Row(children:[
+                Icon(Icons.wifi_off_rounded, color: scheme.onSurfaceVariant),
+                const SizedBox(width:8),
+                Expanded(child: Text(l.offlineReadOnlySnapshot,
+                  style:Theme.of(context).textTheme.bodySmall)),
+              ]),
+            ),
           if (queuedExpenses.isNotEmpty) ...[
             Row(children: [
               Icon(Icons.cloud_upload_outlined, size: 21,
