@@ -15,10 +15,16 @@ class OfflineExpenseOutbox {
   static final instance = OfflineExpenseOutbox._();
   final _uuid = const Uuid();
   Database? _database;
+  Future<Database>? _opening;
   bool _syncing = false;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
+    return _opening ??= _open();
+  }
+
+  Future<Database> _open() async {
+    try {
     final root = await getApplicationDocumentsDirectory();
     final db = await openDatabase(p.join(root.path, 'splitlui_outbox.db'),
       version: 1,
@@ -35,6 +41,7 @@ class OfflineExpenseOutbox {
             paid_by TEXT NOT NULL,
             participants_json TEXT NOT NULL,
             receipt_path TEXT,
+            receipt_date TEXT,
             remote_expense_id TEXT,
             status TEXT NOT NULL DEFAULT 'pending',
             last_error TEXT,
@@ -47,6 +54,7 @@ class OfflineExpenseOutbox {
         ''');
       });
     return _database!;
+    } catch (_) { _opening = null; rethrow; }
   }
 
   String get _userId {
@@ -64,6 +72,7 @@ class OfflineExpenseOutbox {
     required String paidBy,
     required List<String> participants,
     Uint8List? receipt,
+    DateTime? receiptDate,
   }) async {
     final owner = _userId;
     final opId = _uuid.v4();
@@ -88,6 +97,8 @@ class OfflineExpenseOutbox {
         'paid_by': paidBy,
         'participants_json': jsonEncode(participants),
         'receipt_path': path,
+        'receipt_date': receiptDate == null ? null :
+          receiptDate.toIso8601String().substring(0,10),
         'status': 'pending',
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });
@@ -134,6 +145,7 @@ class OfflineExpenseOutbox {
                 'p_paid_by': row['paid_by'],
                 'p_split_between': List<String>.from(
                   jsonDecode(row['participants_json'] as String) as List),
+                'p_date': row['receipt_date'],
               })).toString();
             await db.update('offline_expenses', {
               'remote_expense_id': remoteId,
@@ -175,7 +187,6 @@ class OfflineExpenseOutbox {
     } finally { _syncing = false; }
   }
 
-  /// Users can remove a draft only before the server has acknowledged it.
-  /// A network timeout is ambiguous, so deletion is intentionally disabled
-  /// for all queued drafts; recovery must occur via the idempotent retry.
+  /// We do not expose local Delete for ambiguous requests; after a timeout
+  /// the server may already have committed. Always retry the same UUID.
 }
