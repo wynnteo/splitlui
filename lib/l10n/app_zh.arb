@@ -79,7 +79,6 @@
   "fundContributor": "出资人",
   "fundRecordActual": "请在实际收到款项后才记录，不要将口头承诺当作已出资。",
   "fundNoDoubleSplit": "此费用从共同基金扣除，不会再分摊到个人账目。",
-  "thaiBaht": "THB · 泰铢 (฿)",
   "localOnlyFeatures": "此群组只储存在当前设备。要使用多人记账、共同基金和成员管理，请进入「多人共享群组」。",
   "openSharedGroups": "打开多人共享群组",
   "createLocalGroup": "创建本地群组",
