@@ -152,5 +152,14 @@
   "expenseOriginalTotal": "Paid in this currency",
   "expenseCombinedTotal": "Combined total",
   "expenseCombinedRateNote": "Original payments stay in their own currency. The combined estimate converts the trip spending currency using the registered group exchange rate. Shared member-paid expenses only; Common Fund purchases are excluded.",
-  "expenseCombinedRateMixed": "Original payments stay in their own currency. The trip spending currency uses the registered group rate; any other currencies use the saved expense conversions. Shared member-paid expenses only; Common Fund purchases are excluded."
+  "expenseCombinedRateMixed": "Original payments stay in their own currency. The trip spending currency uses the registered group rate; any other currencies use the saved expense conversions. Shared member-paid expenses only; Common Fund purchases are excluded.",
+  "repaymentDefaultCurrency": "Default repayment currency",
+  "repaymentDefaultCurrencyHint": "Preselect SGD or MYR when recording money received. You can change it for each repayment.",
+  "repaymentPaidCurrency": "Currency received",
+  "repaymentPaidAmount": "Amount actually received",
+  "repaymentConversionRate": "Exchange rate to group spending currency",
+  "repaymentRateHint": "Record the currency and amount actually received. For a different currency, enter the agreed rate; no live exchange rate is assumed.",
+  "repaymentLedgerEquivalent": "Amount credited against debt",
+  "repaymentOutstanding": "Outstanding balance",
+  "repaymentExceedsOutstanding": "The converted repayment exceeds the outstanding balance. Record a smaller amount."
 }
