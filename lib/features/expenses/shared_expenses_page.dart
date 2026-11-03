@@ -240,6 +240,12 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                   widget.currency,
                   style: Theme.of(context).textTheme.bodySmall),
               ],
+              if (expense['receipt_date'] != null) ...[
+                const SizedBox(height: 8),
+                Text(l.expenseReceiptDate + ': ' +
+                  (expense['receipt_date'] as String),
+                  style: Theme.of(context).textTheme.bodySmall),
+              ],
               ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               if (expense['created_by'] ==
                   Supabase.instance.client.auth.currentUser?.id) ...[
@@ -413,6 +419,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   late String expenseCurrency;
   bool saving = false;
   bool readingReceipt = false;
+  bool existingSharesLoading = false;
   DateTime? receiptDate;
   bool currencyManuallySet = false;
   ReceiptDraft? receipt;
@@ -474,6 +481,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     } else {
       payer = widget.initialExpense!['paid_by'] as String;
       fundLoading = false;
+      existingSharesLoading = true;
       loadExistingShares();
     }
   }
@@ -483,10 +491,14 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
       final shares = await widget.api.shares(widget.initialExpense!['id'] as String);
       if (mounted) setState(() {
         selected..clear()..addAll(shares.map((x) => x['user_id'] as String));
+        existingSharesLoading = false;
       });
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        // Do not allow saving an incomplete split when the read fails.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())));
+      }
     }
   }
 
@@ -516,7 +528,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   Future<void> save() async {
-    if (saving || !(form.currentState?.validate() ?? false)) return;
+    if (saving || existingSharesLoading ||
+        !(form.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
     if (!payFromFund && (selected.isEmpty || payer == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -816,7 +829,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           ],
           const SizedBox(height: 28),
           FilledButton(
-            onPressed: saving ? null : save,
+            onPressed: saving || existingSharesLoading ? null : save,
             child: saving
               ? const SizedBox(height: 20, width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2))
