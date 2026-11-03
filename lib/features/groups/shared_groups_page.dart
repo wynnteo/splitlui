@@ -232,10 +232,6 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
       ]),
       body: SafeArea(top: false, child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
-        Text(l.groups,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w700, letterSpacing: -0.7)),
-        const SizedBox(height: 8),
         Text(l.cloudSubtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 24),
