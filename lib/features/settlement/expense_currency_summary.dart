@@ -4,10 +4,12 @@
 /// This summary intentionally preserves the currency actually charged for
 /// each expense, rather than converting every amount into the trip currency.
 class ExpenseCurrencyTotal {
-  const ExpenseCurrencyTotal(this.currency, this.cents, this.count);
+  const ExpenseCurrencyTotal(
+    this.currency, this.cents, this.count, this.settlementCents);
   final String currency;
   final int cents;
   final int count;
+  final int settlementCents;
 }
 
 class ExpenseCurrencySummary {
@@ -49,6 +51,7 @@ class ExpenseCurrencySummary {
 
     final grouped = <String, int>{};
     final counts = <String, int>{};
+    final settlementByCurrency = <String, double>{};
     var settlementTotal = 0.0;
     var hasOtherCurrencies = false;
 
@@ -62,24 +65,31 @@ class ExpenseCurrencySummary {
           ifAbsent: () => originalCents);
       counts.update(originalCurrency, (value) => value + 1, ifAbsent: () => 1);
 
+      double convertedCents;
       if (originalCurrency == settlementCurrency) {
         // A real SGD expense stays SGD; never convert it to THB and back.
-        settlementTotal += originalCents;
+        convertedCents = originalCents.toDouble();
       } else if (originalCurrency == spendingCurrency) {
         // THB charged is converted using the trip's registered exchange rate.
-        settlementTotal += originalCents / spendingPerSettlement;
+        convertedCents = originalCents / spendingPerSettlement;
       } else {
         // For additional currencies, keep the conversion saved with the
         // expense rather than assuming a rate to the settlement currency.
         hasOtherCurrencies = true;
-        settlementTotal +=
+        convertedCents =
             _cents(expense['amount_spending']) / spendingPerSettlement;
       }
+      settlementTotal += convertedCents;
+      settlementByCurrency.update(
+        originalCurrency, (value) => value + convertedCents,
+        ifAbsent: () => convertedCents,
+      );
     }
 
     final totals = [
       for (final entry in grouped.entries)
-        ExpenseCurrencyTotal(entry.key, entry.value, counts[entry.key]!),
+        ExpenseCurrencyTotal(entry.key, entry.value, counts[entry.key]!,
+            settlementByCurrency[entry.key]!.round()),
     ]..sort((a, b) {
         if (a.currency == settlementCurrency) return -1;
         if (b.currency == settlementCurrency) return 1;
