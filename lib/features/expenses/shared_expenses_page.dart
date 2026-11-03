@@ -331,7 +331,20 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               validator: (v) {
                 final text = (v ?? '').trim();
                 final n = double.tryParse(text);
-                if (!RegExp(r'^\d+(\.\d{1,8})?
+                if (!RegExp(r'^\d+(\.\d{1,8})?$').hasMatch(text)
+                    || n == null || !n.isFinite || n <= 0
+                    || n > 99999999999999) return l.invalid;
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            if (convertedAmount != null)
+              Text(l.groupEquivalent + ': ' + widget.currency + ' ' +
+                convertedAmount!.toStringAsFixed(2),
+                style: Theme.of(context).textTheme.bodyMedium),
+          ],
+          const SizedBox(height: 22),
+          LuiFormLabel(l.paidBy),
           DropdownButtonFormField<String>(
             value: payer, isExpanded: true,
             decoration: const InputDecoration(),
