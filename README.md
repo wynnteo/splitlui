@@ -23,6 +23,7 @@ This repository starts with Flutter source and manifest, without generated Andro
 git clone https://github.com/wynnteo/splitlui.git
 cd splitlui
 flutter create --project-name splitlui --org dev.cloudfullstack .
+python3 scripts/ensure_android_internet_permission.py
 flutter pub get
 flutter gen-l10n
 flutter analyze
@@ -44,3 +45,42 @@ Example: 1 SGD = 115 JPY. Rate is `115`. An expense of 11,500 JPY is 100 SGD. Th
 3. Common Fund ledger: contributions, pooled payments, top-ups and refunds.
 4. Custom per-expense rates, balance algorithm and SGD settlement.
 5. PayNow QR image sharing and manual confirmed-settlement workflow.
+
+## Build an Android release APK with internet access
+
+Android platform files are generated locally by `flutter create` and are not
+currently committed in this repository. Therefore **don't overwrite your
+existing AndroidManifest.xml with a generic template**: it may contain
+important application IDs, plugins, activity settings, and signing setup.
+
+From the SplitLui project folder on your Mac, run:
+
+```bash
+git pull origin master
+python3 scripts/ensure_android_internet_permission.py
+flutter clean
+flutter pub get
+flutter gen-l10n
+flutter build apk --release
+```
+
+The idempotent script adds
+`<uses-permission android:name="android.permission.INTERNET" />`
+inside your existing
+`android/app/src/main/AndroidManifest.xml` (outside `<application>`).
+It preserves the rest of the manifest and can be run more than once.
+If the Android platform folder is missing, first run:
+
+```bash
+flutter create --project-name splitlui --org dev.cloudfullstack .
+```
+
+The APK is at `build/app/outputs/flutter-apk/app-release.apk`.
+For a USB-connected Android phone you can also use
+`flutter install --release` after building.
+
+If a release APK still reports `Failed host lookup`, open your
+configured Supabase project's URL in the phone browser, and check
+Wi-Fi/mobile data, DNS/VPN/Private DNS, and the Supabase project status.
+An internet permission fixes a missing app permission, but not a real
+DNS outage or a wrong Supabase URL.
