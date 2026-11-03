@@ -132,5 +132,11 @@
   "payNowCopyNumber": "Copy PayNow number",
   "payNowShareRequest": "Share payment request",
   "payNowEstimatedSgd": "Approximate SGD equivalent (confirm rate before payment)",
-  "payNowAgreeSgd": "PayNow transfers in SGD. Agree the SGD amount with the recipient before paying."
+  "payNowAgreeSgd": "PayNow transfers in SGD. Agree the SGD amount with the recipient before paying.",
+  "inviteShareHeading": "You're invited to join my SplitLui group!",
+  "inviteShareInstructions": "Install/open SplitLui, tap Join Group, then paste this code (or the full message).",
+  "inviteInstallApp": "Install SplitLui",
+  "inviteShareButton": "Share invite",
+  "inviteShareHint": "Share this code privately with people you trust. Anyone with it can join until the organiser resets it.",
+  "inviteInvalidCode": "Paste a valid invitation code or the full invitation message."
 }
