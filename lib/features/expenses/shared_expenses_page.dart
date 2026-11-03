@@ -127,7 +127,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
       context: context, isScrollControlled: true, showDragHandle: true,
       builder: (_) => FutureBuilder<List<Map<String, dynamic>>>(
         future: api.shares(expense['id'] as String),
-        builder: (context, snapshot) => SafeArea(child: Padding(
+        builder: (context, snapshot) => SafeArea(child: SingleChildScrollView(
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 26),
           child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -143,6 +144,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                   widget.currency,
                   style: Theme.of(context).textTheme.bodySmall),
               ],
+              ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
@@ -170,8 +172,23 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                     ),
                   ),
             ]),
-        )),
+        ))),
       ),
+    );
+  }
+
+  Future<void> showFundReceipt(Map<String,dynamic> entry) async {
+    await showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        child: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(entry['description'] as String,
+              style: Theme.of(context).textTheme.titleLarge),
+            ReceiptAttachmentPreview(fundEntryId: entry['id'] as String),
+          ]),
+      )),
     );
   }
 
@@ -214,6 +231,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
               trailing: Text(widget.currency + ' ' +
                 (purchase['amount'] as num).toStringAsFixed(2),
                 style: const TextStyle(fontWeight: FontWeight.w700)),
+              onTap: () => showFundReceipt(purchase),
             ),
             const SizedBox(height: 10),
           ],
