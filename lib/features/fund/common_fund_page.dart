@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
+import 'advanced_fund_section.dart';
 
 /// V1: a manual ledger, not a payment processor. A contribution records money
 /// physically received; a fund expense reduces pooled money and is not split.
@@ -207,7 +208,19 @@ class _CommonFundPageState extends State<CommonFundPage> {
             icon: const Icon(Icons.receipt_long_outlined),
             label: Text(l.fundPayExpense),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 26),
+          if (!busy && error == null) ...[
+            AdvancedFundSection(
+              groupId:widget.groupId,
+              currency:widget.currency,
+              members:widget.members,
+              entries:entries,
+              balance:balance,
+              isOwner:isOwner,
+              onChanged:refresh,
+            ),
+            const SizedBox(height:26),
+          ],
           LuiSectionHeading(title: l.fundHistory),
           const SizedBox(height: 12),
           if (busy) const Center(child: CircularProgressIndicator()),
