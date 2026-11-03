@@ -47,5 +47,8 @@
   "cloudIdentityWarning": "访客账号绑定当前设备。清除 App 数据可能失去群组访问权限，账号恢复将在之后加入。",
   "cloudExpenseNext": "共同记账、公款管理和自动结算将在下一阶段加入。",
   "cloudNotConfigured": "请先配置 Supabase 才能使用共享群组。",
-  "nameHint": "例如：东京周末游"
+  "nameHint": "例如：东京周末游",
+  "settingsIntro": "调整 SplitLui 的使用偏好。",
+  "appearanceHint": "选择适合你的显示模式。",
+  "languageHint": "选择 App 的显示语言。"
 }

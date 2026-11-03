@@ -8,17 +8,18 @@ Group membership is cloud-backed. Phase 1 local groups remain separate.
 3. Execute supabase/migrations/20261103_000001_trip_groups.sql in the Supabase SQL Editor.
 4. The Supabase URL and public **publishable** key are already provided in `config/supabase.json`. Never use the service_role or secret key in Flutter.
 
-## Run
-The app's Supabase URL and publishable key are included in `config/supabase.json`. No manual config file is required.
+## Run from Android Studio
+
+The public Supabase project URL and publishable key are bundled as a Flutter asset from `config/supabase.json`. Open the project in Android Studio and click **Run**. No custom `--dart-define-from-file` argument is needed.
+
+Initial preparation (once after pulling changes):
 
     flutter pub get
     flutter gen-l10n
-    flutter analyze
-    flutter run --dart-define-from-file=config/supabase.json
 
-For development, you can override the configuration using another local file if needed. The checked-in key is publishable, not secret; database access still depends on RLS.
+Then simply use the Android Studio Run / Debug buttons, or `flutter run` in the terminal.
 
-Without Supabase settings, cloud groups stay disabled and local Phase 1 groups still work.
+Do not put a Supabase secret or service_role key in the bundled JSON. Since this file is included in the app package, its values are public. RLS protects database access.
 
 ## Try on two separate devices
 1. Device A: Shared groups > enter nickname > Create group.
