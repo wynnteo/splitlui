@@ -89,6 +89,9 @@ class _SplitLuiState extends State<SplitLui> {
       'members' => l.members,
       'soon' => l.soon,
       'local' => l.local,
+      'localOnlyFeatures' => l.localOnlyFeatures,
+      'openSharedGroups' => l.openSharedGroups,
+      'createLocalGroup' => l.createLocalGroup,
       _ => key,
     };
   }
@@ -188,9 +191,12 @@ class _SplitLuiState extends State<SplitLui> {
               LuiSectionHeading(
                 title: l.groups,
                 trailing: TextButton.icon(
-                  onPressed: () => addGroup(context),
+                  onPressed: () => cloudEnabled
+                    ? Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const SharedGroupsPage()))
+                    : addGroup(context),
                   icon: const Icon(Icons.add, size: 20),
-                  label: Text(l.newGroup),
+                  label: Text(cloudEnabled ? l.cloudGroups : l.createLocalGroup),
                 ),
               ),
               const SizedBox(height: 14),
@@ -204,9 +210,12 @@ class _SplitLuiState extends State<SplitLui> {
                       style: Theme.of(context).textTheme.bodyLarge),
                     const SizedBox(height: 20),
                     FilledButton.icon(
-                      onPressed: () => addGroup(context),
+                      onPressed: () => cloudEnabled
+                        ? Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => const SharedGroupsPage()))
+                        : addGroup(context),
                       icon: const Icon(Icons.add),
-                      label: Text(l.newGroup),
+                      label: Text(cloudEnabled ? l.cloudGroups : l.createLocalGroup),
                     ),
                   ]),
                 ),
@@ -284,7 +293,7 @@ class _CreateGroupState extends State<CreateGroup> {
             isExpanded: true,
             decoration: const InputDecoration(),
             items: currencies.map((c) => DropdownMenuItem(
-              value: c, child: Text(c))).toList(),
+              value: c, child: Text(c == 'THB' ? l.thaiBaht : c))).toList(),
             onChanged: (v) {
               if (v != null) setState(() {
                 spending = v;
@@ -299,7 +308,7 @@ class _CreateGroupState extends State<CreateGroup> {
             isExpanded: true,
             decoration: const InputDecoration(),
             items: currencies.map((c) => DropdownMenuItem(
-              value: c, child: Text(c))).toList(),
+              value: c, child: Text(c == 'THB' ? l.thaiBaht : c))).toList(),
             onChanged: (v) {
               if (v != null) setState(() {
                 settlement = v;
@@ -371,14 +380,26 @@ class GroupPage extends StatelessWidget {
         Text(t('budget') + ': ' + group.budget.toString() + ' ' + group.spending),
       ],
       const SizedBox(height: 28),
-      LuiFeatureTile(icon: Icons.receipt_long_outlined,
-        title: t('expenses'), subtitle: t('soon'), trailing: const SizedBox.shrink()),
-      const SizedBox(height: 12),
-      LuiFeatureTile(icon: Icons.account_balance_wallet_outlined,
-        title: t('fund'), subtitle: t('soon'), trailing: const SizedBox.shrink()),
-      const SizedBox(height: 12),
-      LuiFeatureTile(icon: Icons.people_outline,
-        title: t('members'), subtitle: t('soon'), trailing: const SizedBox.shrink()),
+      Card(child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.info_outline_rounded,
+              color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 12),
+            Text(t('localOnlyFeatures'),
+              style: Theme.of(context).textTheme.bodyMedium),
+            if (cloudEnabled) ...[
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SharedGroupsPage())),
+                icon: const Icon(Icons.groups_2_outlined),
+                label: Text(t('openSharedGroups')),
+              ),
+            ],
+          ]),
+      )),
       const SizedBox(height: 24),
       Text(t('local'), style: Theme.of(context).textTheme.bodySmall),
     ]),
