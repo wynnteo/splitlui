@@ -1,7 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
+import 'receipt_capture.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -26,28 +29,30 @@ class SharedExpenseApi {
     return rows.map((r) => Map<String,dynamic>.from(r)).toList();
   }
 
-  Future<void> addFundPurchase({
+  Future<String> addFundPurchase({
     required String groupId, required String title,
     required double amount, required String currency,
     required double rateToSpending,
   }) async {
-    await db.rpc('record_trip_fund_purchase',params: {
+    final id = await db.rpc('record_trip_fund_purchase',params: {
       'p_group':groupId, 'p_title':title.trim(), 'p_amount':amount,
       'p_currency':currency, 'p_rate_to_spending':rateToSpending,
     });
+    return id.toString();
   }
 
-  Future<void> add({
+  Future<String> add({
     required String groupId, required String title,
     required double amount, required String currency,
     required double rateToSpending, required String paidBy,
     required List<String> splitBetween,
   }) async {
-    await db.rpc('add_trip_expense_v2', params: {
+    final id = await db.rpc('add_trip_expense_v2', params: {
       'p_group': groupId, 'p_title': title.trim(), 'p_amount': amount,
       'p_currency': currency, 'p_rate_to_spending': rateToSpending,
       'p_paid_by': paidBy, 'p_split_between': splitBetween,
     });
+    return id.toString();
   }
 
   Future<List<Map<String, dynamic>>> shares(String expenseId) async {
