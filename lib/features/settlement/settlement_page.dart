@@ -121,13 +121,9 @@ class _SettlementPageState extends State<SettlementPage> {
     widget.spendingCurrency != widget.settlementCurrency &&
     widget.exchangeRate.isFinite && widget.exchangeRate > 0;
 
-  String get shownCurrency =>
-    hasAlternateCurrency && showSettlementCurrency
-      ? widget.settlementCurrency : widget.spendingCurrency;
-
   String shownAmount(int cents) {
     if (hasAlternateCurrency && showSettlementCurrency) {
-      return widget.settlementCurrency + ' ' +
+      return '≈ ' + widget.settlementCurrency + ' ' +
         (cents / 100 / widget.exchangeRate).toStringAsFixed(2);
     }
     return amount(cents);
@@ -149,13 +145,14 @@ class _SettlementPageState extends State<SettlementPage> {
       ..writeln(l.payNowRecipient + ': ' + recipient)
       ..writeln(l.payNowAmountDue + ': ' + shownAmount(transfer.cents));
     if (hasAlternateCurrency) {
-      content.writeln(l.settlementOriginalBalance + ': ' + amount(transfer.cents));
       if (showSettlementCurrency) {
-        content.writeln(l.settlementEstimateDisclaimer);
+        content.writeln(l.settlementOriginalBalance + ': ' +
+            amount(transfer.cents));
       } else {
-        content.writeln(l.settlementEstimateDisclaimer + ': ' +
+        content.writeln(l.settlementConvertedEstimate + ': ' +
             settlementEstimate(transfer.cents)!);
       }
+      content.writeln(l.settlementEstimateDisclaimer);
     }
     if (phone != null && phone.isNotEmpty) {
       content
