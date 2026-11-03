@@ -7,6 +7,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'receipt_capture.dart';
 import 'offline_expense_outbox.dart';
+import 'fund_purchase_edit_page.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -25,7 +26,7 @@ class SharedExpenseApi {
 
   Future<List<Map<String,dynamic>>> fundPurchases(String groupId) async {
     final rows = await db.from('trip_fund_entries')
-        .select('id,description,amount,original_amount,original_currency,rate_to_spending,created_at')
+        .select('id,description,amount,original_amount,original_currency,rate_to_spending,recorded_by,receipt_date,created_at,updated_at')
         .eq('group_id', groupId).eq('entry_type','expense')
         .order('created_at',ascending:false);
     return rows.map((r) => Map<String,dynamic>.from(r)).toList();
@@ -88,6 +89,17 @@ class SharedExpenseApi {
           '${receiptDate.year.toString().padLeft(4,'0')}-'
           '${receiptDate.month.toString().padLeft(2,'0')}-'
           '${receiptDate.day.toString().padLeft(2,'0')}',
+    });
+  }
+
+  Future<void> correctFundPurchase({
+    required String groupId, required Map<String,dynamic> entry,
+  }) async {
+    await db.rpc('correct_trip_fund_purchase',params:{
+      'p_group':groupId,'p_entry':entry['id'],
+      'p_expected_updated_at':entry['updated_at'],
+      'p_delete':true,'p_title':null,'p_amount':null,'p_currency':null,
+      'p_rate_to_spending':null,'p_date':null,
     });
   }
 
@@ -347,7 +359,6 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                   (expense['receipt_date'] as String),
                   style: Theme.of(context).textTheme.bodySmall),
               ],
-              ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               if (expense['created_by'] ==
                   Supabase.instance.client.auth.currentUser?.id) ...[
                 const SizedBox(height: 10),
@@ -358,18 +369,17 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                       editExpense(expense);
                     },
                     icon:const Icon(Icons.edit_outlined),
-                    label:Text(l.editExpense),
-                  ),
+                    label:Text(l.editExpense)),
                   TextButton.icon(
                     onPressed:(){
                       Navigator.pop(context);
                       deleteExpense(expense);
                     },
                     icon:const Icon(Icons.delete_outline),
-                    label:Text(l.deleteExpense),
-                  ),
+                    label:Text(l.deleteExpense)),
                 ]),
               ],
+              ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
@@ -402,18 +412,127 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     );
   }
 
+  Future<void> editFundPurchase(Map<String,dynamic> entry) async {
+    final changed=await Navigator.push<bool>(context,MaterialPageRoute(
+      builder:(_)=>FundPurchaseEditPage(
+        groupId:widget.groupId,
+        groupCurrency:widget.currency,
+        entry:entry,
+      ),
+    ));
+    if(mounted && changed==true) await refresh();
+  }
+
+  Future<void> deleteFundPurchase(Map<String,dynamic> entry) async {
+    final l=AppLocalizations.of(context)!;
+    final confirmed=await showDialog<bool>(context:context,
+      builder:(ctx)=>AlertDialog(
+        title:Text(l.deleteExpense),
+        content:Text(l.fundPurchaseDeleteWarning),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(ctx,false),
+            child:Text(l.cloudCancel)),
+          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+            child:Text(l.deleteExpense)),
+        ],
+      ),
+    );
+    if(confirmed!=true || !mounted) return;
+    try {
+      String? receiptPath;
+      try {
+        final link=await ReceiptStorage().get(
+          fundEntryId:entry['id'] as String);
+        receiptPath=link?['object_path'] as String?;
+      } catch (_) {}
+      await api.correctFundPurchase(groupId:widget.groupId,entry:entry);
+      if(receiptPath!=null) {
+        try {
+          await Supabase.instance.client.storage.from(ReceiptStorage.bucket)
+            .remove([receiptPath]);
+        } catch (_) {
+          if(mounted) ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content:Text(l.expenseReceiptCleanupWarning)));
+        }
+      }
+      if(mounted) await refresh();
+    } catch(e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(e.toString())));
+    }
+  }
+
   Future<void> showFundReceipt(Map<String,dynamic> entry) async {
+    final l=AppLocalizations.of(context)!;
+    final originalCurrency=entry['original_currency'] as String? ??
+      widget.currency;
+    final originalAmount=(entry['original_amount'] ?? entry['amount']) as num;
+    final groupAmount=(entry['amount'] as num);
+    final canEdit=!showingOfflineSnapshot &&
+      entry['recorded_by']==Supabase.instance.client.auth.currentUser?.id;
     await showModalBottomSheet<void>(
-      context: context, isScrollControlled: true, showDragHandle: true,
-      builder: (sheetContext) => SafeArea(child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        child: Column(mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
+      context:context,isScrollControlled:true,useSafeArea:true,
+      showDragHandle:true,
+      builder:(sheetContext)=>FractionallySizedBox(
+        heightFactor:0.66,
+        child:SingleChildScrollView(
+          padding:const EdgeInsets.fromLTRB(20,4,20,32),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Row(children:[
+              Icon(Icons.account_balance_wallet_outlined,
+                color:Theme.of(sheetContext).colorScheme.primary),
+              const SizedBox(width:10),
+              Expanded(child:Text(l.fundPaidFromPool,
+                style:Theme.of(sheetContext).textTheme.titleMedium)),
+            ]),
+            const SizedBox(height:16),
             Text(entry['description'] as String,
-              style: Theme.of(context).textTheme.titleLarge),
-            ReceiptAttachmentPreview(fundEntryId: entry['id'] as String),
+              style:Theme.of(sheetContext).textTheme.headlineSmall
+                ?.copyWith(fontWeight:FontWeight.w700)),
+            const SizedBox(height:12),
+            Text(originalCurrency + ' ' + originalAmount.toStringAsFixed(2),
+              style:Theme.of(sheetContext).textTheme.titleLarge),
+            if(originalCurrency!=widget.currency) ...[
+              const SizedBox(height:6),
+              Text(l.groupEquivalent + ': ' + widget.currency + ' ' +
+                groupAmount.toStringAsFixed(2)),
+              const SizedBox(height:6),
+              Text(l.expenseRateToGroup + ': 1 ' + originalCurrency + ' = ' +
+                (entry['rate_to_spending']?.toString() ?? '1') +
+                ' ' + widget.currency),
+            ],
+            const SizedBox(height:10),
+            if(entry['receipt_date'] != null)
+              Text(l.expenseReceiptDate + ': ' +
+                (entry['receipt_date'] as String)),
+            const SizedBox(height:12),
+            if(canEdit) ...[
+              const SizedBox(height:18),
+              Wrap(spacing:10,runSpacing:8,children:[
+                OutlinedButton.icon(
+                  onPressed:(){
+                    Navigator.pop(sheetContext);
+                    editFundPurchase(entry);
+                  },
+                  icon:const Icon(Icons.edit_outlined),
+                  label:Text(l.editExpense)),
+                TextButton.icon(
+                  onPressed:(){
+                    Navigator.pop(sheetContext);
+                    deleteFundPurchase(entry);
+                  },
+                  icon:const Icon(Icons.delete_outline),
+                  label:Text(l.deleteExpense)),
+              ]),
+            ],
+            const SizedBox(height:12),
+            ReceiptAttachmentPreview(fundEntryId:entry['id'] as String),
+            if(!canEdit)
+              Text(l.fundPurchaseAuthorOnly,
+                style:Theme.of(sheetContext).textTheme.bodySmall),
           ]),
-      )),
+        ),
+      ),
     );
   }
 
@@ -427,12 +546,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
       body: SafeArea(top: false, child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          Text(widget.groupName,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Text(widget.currency, style: TextStyle(color: scheme.onSurfaceVariant)),
-          const SizedBox(height: 22),
+          const SizedBox(height: 6),
           FilledButton.icon(
             onPressed: widget.members.isEmpty || busy ? null : createExpense,
             icon: const Icon(Icons.add_rounded), label: Text(l.addExpense)),

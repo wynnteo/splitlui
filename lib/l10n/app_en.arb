@@ -188,5 +188,7 @@
   "offlineReceiptPending": "Expense synced · Receipt upload pending",
   "offlineReadOnlySnapshot": "Showing saved expenses from this device. Balances may be outdated until connected.",
   "offlineReadOnlyDetails": "Offline snapshot. Member splits, receipt downloads and editing require an internet connection. Amounts may have changed on another device.",
-  "offlinePendingDetails": "This expense has been stored on this device. It is not included in shared balances until the server confirms it. Do not enter it again while waiting for sync."
+  "offlinePendingDetails": "This expense has been stored on this device. It is not included in shared balances until the server confirms it. Do not enter it again while waiting for sync.",
+  "fundPurchaseDeleteWarning": "Delete this Common Fund purchase? Its full amount will be restored to the fund balance. This correction will be kept in the audit history.",
+  "fundPurchaseAuthorOnly": "Only the member who recorded this Common Fund purchase can edit or delete it while online."
 }
