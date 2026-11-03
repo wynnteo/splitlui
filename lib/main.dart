@@ -8,7 +8,7 @@ import 'l10n/generated/app_localizations.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-const cloudEnabled = supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+final bool cloudEnabled = supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
