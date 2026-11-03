@@ -17,7 +17,7 @@ class CommonFundApi {
 
   Future<List<Map<String, dynamic>>> entries(String groupId) async {
     final data = await db.from('trip_fund_entries')
-        .select('id,entry_type,amount,member_id,description,recorded_by,created_at')
+        .select('id,entry_type,amount,member_id,description,recorded_by,created_at,reverses_entry_id')
         .eq('group_id', groupId).order('created_at', ascending: false);
     return (data as List)
         .map((item) => Map<String, dynamic>.from(item as Map)).toList();
@@ -33,6 +33,25 @@ class CommonFundApi {
       'p_amount': amount,
       'p_member': contribution ? contributor : null,
       'p_description': description.trim(),
+    });
+  }
+
+  Future<void> refund({
+    required String groupId, required String memberId,
+    required double amount, required String description,
+  }) async {
+    await db.rpc('refund_trip_fund_member', params: {
+      'p_group': groupId, 'p_member': memberId,
+      'p_amount': amount, 'p_description': description.trim(),
+    });
+  }
+
+  Future<void> reverse({
+    required String groupId, required String entryId,
+    required String reason,
+  }) async {
+    await db.rpc('reverse_trip_fund_entry', params: {
+      'p_group': groupId, 'p_entry': entryId, 'p_reason': reason.trim(),
     });
   }
 
@@ -112,6 +131,62 @@ class _CommonFundPageState extends State<CommonFundPage> {
       ),
     ));
     if (mounted && saved == true) await refresh();
+  }
+
+  Future<void> refundMember() async {
+    final saved = await Navigator.push<bool>(context, MaterialPageRoute(
+      builder: (_) => FundRefundForm(
+        api: api,
+        groupId: widget.groupId,
+        currency: widget.currency,
+        members: widget.members,
+      ),
+    ));
+    if (mounted && saved == true) await refresh();
+  }
+
+  Future<void> reverseEntry(Map<String, dynamic> entry) async {
+    final l = AppLocalizations.of(context)!;
+    String reason = '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.fundReverseEntry),
+        content: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(l.fundReverseWarning),
+          const SizedBox(height: 14),
+          TextField(
+            maxLength: 120,
+            onChanged: (value) => reason = value,
+            decoration: InputDecoration(labelText: l.fundCorrectionReason),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l.cloudCancel)),
+          FilledButton(
+            onPressed: () {
+              if (reason.trim().isNotEmpty) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
+            child: Text(l.fundConfirmCorrection)),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() => busy = true);
+    try {
+      await api.reverse(groupId: widget.groupId,
+        entryId: entry['id'] as String, reason: reason);
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   Future<void> editThreshold() async {
@@ -235,6 +310,14 @@ class _CommonFundPageState extends State<CommonFundPage> {
             icon: const Icon(Icons.receipt_long_outlined),
             label: Text(l.fundPayExpense),
           ),
+          if (isOwner) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: busy ? null : refundMember,
+              icon: const Icon(Icons.currency_exchange_outlined),
+              label: Text(l.fundRefundMember),
+            ),
+          ],
           const SizedBox(height: 28),
           LuiSectionHeading(title: l.fundHistory),
           const SizedBox(height: 12),
@@ -247,23 +330,50 @@ class _CommonFundPageState extends State<CommonFundPage> {
               child: Text(l.fundNoEntries, textAlign: TextAlign.center),
             )),
           for (final entry in entries) ...[
-            LuiFeatureTile(
-              icon: entry['entry_type'] == 'contribution'
-                ? Icons.savings_outlined : Icons.shopping_bag_outlined,
-              title: entry['description'] as String,
-              subtitle: entry['entry_type'] == 'contribution'
-                ? l.fundContributedBy + ': ' +
-                    nameOf(entry['member_id'] as String?)
-                : l.fundPaidFromPool,
-              trailing: Text(
-                (entry['entry_type'] == 'contribution' ? '+' : '-') +
-                widget.currency + ' ' +
-                (entry['amount'] as num).toStringAsFixed(2),
-                style: TextStyle(fontWeight: FontWeight.w700,
-                  color: entry['entry_type'] == 'contribution'
-                    ? colors.primary : colors.onSurface),
-              ),
-            ),
+            Builder(builder: (context) {
+              final type = entry['entry_type'] as String;
+              final reversedIds = entries
+                .where((e) => e['entry_type'] == 'reversal')
+                .map((e) => e['reverses_entry_id'] as String?)
+                .toSet();
+              final wasReversed = reversedIds.contains(entry['id']);
+              final original = type == 'reversal'
+                ? entries.where((e) => e['id'] == entry['reverses_entry_id'])
+                    .firstOrNull
+                : null;
+              final positive = type == 'contribution' ||
+                (type == 'reversal' && original?['entry_type'] != 'contribution');
+              final label = switch (type) {
+                'contribution' => l.fundContributedBy + ': ' +
+                  nameOf(entry['member_id'] as String?),
+                'refund' => l.fundRefundedTo + ': ' +
+                  nameOf(entry['member_id'] as String?),
+                'reversal' => l.fundCorrection,
+                _ => l.fundPaidFromPool,
+              };
+              return LuiFeatureTile(
+                icon: type == 'reversal'
+                  ? Icons.undo_rounded
+                  : type == 'refund'
+                    ? Icons.reply_rounded
+                    : type == 'contribution'
+                      ? Icons.savings_outlined : Icons.shopping_bag_outlined,
+                title: entry['description'] as String,
+                subtitle: label +
+                  (wasReversed ? ' · ' + l.fundReversedLabel : ''),
+                trailing: Text(
+                  (positive ? '+' : '-') + widget.currency + ' ' +
+                  (entry['amount'] as num).toStringAsFixed(2),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: positive ? colors.primary : colors.onSurface,
+                  ),
+                ),
+                onTap: isOwner && !busy && !wasReversed && type != 'reversal'
+                  ? () => reverseEntry(entry)
+                  : null,
+              );
+            }),
             const SizedBox(height: 10),
           ],
         ],
@@ -394,6 +504,113 @@ class _FundEntryFormState extends State<FundEntryForm> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+class FundRefundForm extends StatefulWidget {
+  const FundRefundForm({
+    super.key, required this.api, required this.groupId,
+    required this.currency, required this.members,
+  });
+  final CommonFundApi api;
+  final String groupId, currency;
+  final List<Map<String, dynamic>> members;
+  @override State<FundRefundForm> createState() => _FundRefundFormState();
+}
+
+class _FundRefundFormState extends State<FundRefundForm> {
+  final form = GlobalKey<FormState>();
+  final amount = TextEditingController();
+  final note = TextEditingController();
+  String? memberId;
+  bool saving = false;
+
+  @override void initState() {
+    super.initState();
+    memberId = widget.members.isEmpty ? null :
+      widget.members.first['user_id'] as String;
+  }
+
+  @override void dispose() {
+    amount.dispose();
+    note.dispose();
+    super.dispose();
+  }
+
+  Future<void> save() async {
+    if (saving || memberId == null || !(form.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() => saving = true);
+    try {
+      await widget.api.refund(
+        groupId: widget.groupId, memberId: memberId!,
+        amount: double.parse(amount.text.trim()),
+        description: note.text,
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.fundRefundMember)),
+      body: Form(key: form, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        children: [
+          Text(l.fundRefundNotice,
+            style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 22),
+          LuiFormLabel(l.fundRefundRecipient),
+          DropdownButtonFormField<String>(
+            value: memberId, isExpanded: true,
+            decoration: const InputDecoration(),
+            items: widget.members.map((m) => DropdownMenuItem(
+              value: m['user_id'] as String,
+              child: Text(m['nickname'] as String))).toList(),
+            onChanged: saving ? null : (value) =>
+              setState(() => memberId = value),
+          ),
+          const SizedBox(height: 22),
+          LuiFormLabel(l.expenseAmount),
+          TextFormField(
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(prefixText: widget.currency + ' '),
+            validator: (v) {
+              final raw = (v ?? '').trim();
+              final n = double.tryParse(raw);
+              if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(raw) ||
+                  n == null || !n.isFinite || n <= 0 ||
+                  n > 9999999999999999) return l.invalid;
+              return null;
+            },
+          ),
+          const SizedBox(height: 22),
+          LuiFormLabel(l.fundRefundNote),
+          TextFormField(
+            controller: note, maxLength: 120,
+            decoration: InputDecoration(hintText: l.fundRefundNoteHint),
+            validator: (v) => (v ?? '').trim().isEmpty ? l.required : null,
+          ),
+          const SizedBox(height: 28),
+          FilledButton(
+            onPressed: saving ? null : save,
+            child: saving
+              ? const SizedBox(height: 20, width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(l.fundRecordRefund),
+          ),
+        ],
+      )),
     );
   }
 }
