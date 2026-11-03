@@ -174,5 +174,12 @@
   "receiptGallery": "从相册选择",
   "receiptRemove": "移除照片",
   "receiptReviewHint": "识别金额仅供参考，保存前请确认金额和货币。",
-  "receiptUploadFailed": "开销已保存，但收据照片上传失败。请勿重复新增同一笔开销。"
+  "receiptUploadFailed": "开销已保存，但收据照片上传失败。请勿重复新增同一笔开销。",
+  "offlinePendingHeading": "等待同步",
+  "offlineRetry": "立即同步",
+  "offlinePending": "已保存到本机 · 尚未同步",
+  "offlineNeedsReview": "需要检查 · 点击立即同步重试",
+  "offlineReceiptPending": "开销已同步 · 收据仍待上传",
+  "offlineSyncError": "同步失败。开销已保存在本机，联网后可重试。",
+  "offlineFundOnline": "共同基金支出必须联网才能确认。"
 }
