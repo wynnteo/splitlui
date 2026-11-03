@@ -45,6 +45,13 @@ direct write grants. Only authenticated group owners can run:
 `set_trip_fund_target`, `request_trip_fund_topup`,
 `cancel_trip_fund_topup`, `confirm_trip_fund_refund`.
 
+Each refund confirmation carries a client-generated idempotency UUID. The server
+checks and returns the original record when a request is retried after a lost
+network response, preventing a second balance debit for the same operation.
+The in-session UI reuses the same UUID for a matching retry; after restarting
+the app, users should check the refund history before manually recording a
+new refund.
+
 The refund RPC locks the fund account, checks recipient group membership,
 current available balance, member contributions minus previous refunds,
 and writes the balance debit + immutable refund record in one transaction.
