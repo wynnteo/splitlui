@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'settlement_calculator.dart';
+import 'paynow_settings_page.dart';
 
 /// Settlement preview only: no transfer is executed or marked as paid.
 class SettlementPage extends StatefulWidget {
@@ -24,6 +27,8 @@ class _SettlementPageState extends State<SettlementPage> {
   String? error;
   SettlementResult? result;
   List<Map<String, dynamic>> repayments = [];
+  Map<String,String> payNowMobiles = {};
+  final payNowApi = GroupPayNowApi();
 
   @override
   void initState() {
@@ -67,6 +72,7 @@ class _SettlementPageState extends State<SettlementPage> {
           'expense_id,user_id,share_spending');
       final receiptRows = await readAll('trip_repayments',
         'id,from_user_id,to_user_id,amount_spending,note,created_at');
+      final payNowRows = await payNowApi.getAll(widget.groupId);
       final calculated = SettlementCalculator.calculate(
         memberIds: widget.members.map((m) => m['user_id'] as String).toList(),
         expenses: expenses,
@@ -76,6 +82,7 @@ class _SettlementPageState extends State<SettlementPage> {
       if (mounted) setState(() {
         result = calculated;
         repayments = receiptRows;
+        payNowMobiles = payNowRows;
       });
     } catch (e) {
       if (mounted) setState(() { error = e.toString(); result = null; });
@@ -97,6 +104,65 @@ class _SettlementPageState extends State<SettlementPage> {
       ),
     ));
     if (mounted && recorded == true) await refresh();
+  }
+
+  Future<void> editPayNow() async {
+    final updated = await Navigator.push<bool>(context, MaterialPageRoute(
+      builder: (_) => PayNowSettingsPage(
+        groupId: widget.groupId,
+        groupName: widget.groupName,
+      ),
+    ));
+    if (mounted && updated == true) await refresh();
+  }
+
+  String repaymentMessage(SuggestedTransfer transfer, AppLocalizations l) {
+    final recipient = nameOf(transfer.toUserId);
+    final sender = nameOf(transfer.fromUserId);
+    final phone = payNowMobiles[transfer.toUserId];
+    final content = StringBuffer()
+      ..writeln('SplitLui · ' + widget.groupName)
+      ..writeln(l.payNowRequestTo + ': ' + sender)
+      ..writeln(l.payNowRecipient + ': ' + recipient)
+      ..writeln(l.payNowAmountDue + ': ' + amount(transfer.cents));
+    if (widget.spendingCurrency != 'SGD' &&
+        widget.settlementCurrency == 'SGD' &&
+        widget.exchangeRate.isFinite && widget.exchangeRate > 0) {
+      content.writeln(l.payNowEstimatedSgd + ': ≈ SGD ' +
+          (transfer.cents / 100 / widget.exchangeRate).toStringAsFixed(2));
+    }
+    if (phone != null && phone.isNotEmpty) {
+      content
+        ..writeln('PayNow: +65 ' + phone)
+        ..writeln(l.payNowVerifyRecipient);
+    } else {
+      content.writeln(l.payNowNoDetailsShared);
+    }
+    if (widget.spendingCurrency != 'SGD') {
+      content.writeln(l.payNowAgreeSgd);
+    }
+    content.writeln(l.payNowNotPayment);
+    return content.toString().trimRight();
+  }
+
+  Future<void> shareRequest(SuggestedTransfer transfer) async {
+    final l = AppLocalizations.of(context)!;
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text: repaymentMessage(transfer,l),
+      ));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> copyPayNow(String userId) async {
+    final phone = payNowMobiles[userId];
+    if (phone == null) return;
+    await Clipboard.setData(ClipboardData(text: phone));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context)!.payNowCopied)));
   }
 
   String amount(int cents) =>
@@ -133,6 +199,12 @@ class _SettlementPageState extends State<SettlementPage> {
           const SizedBox(height: 10),
           Text(l.settlementExplanation,
             style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: busy ? null : editPayNow,
+            icon: const Icon(Icons.phone_iphone_outlined),
+            label: Text(l.payNowDetails),
+          ),
           const SizedBox(height: 18),
           if (widget.settlementCurrency != widget.spendingCurrency)
             Card(child: Padding(
@@ -194,11 +266,30 @@ class _SettlementPageState extends State<SettlementPage> {
                     if (Supabase.instance.client.auth.currentUser?.id ==
                         transfer.toUserId) ...[
                       const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: busy ? null : () => recordReceipt(transfer),
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: Text(l.repaymentConfirmReceived),
-                      ),
+                      if (payNowMobiles[transfer.toUserId] != null) ...[
+                        Row(children: [
+                          Expanded(child: Text('PayNow: +65 ' +
+                            payNowMobiles[transfer.toUserId]!,
+                            style: Theme.of(context).textTheme.bodyMedium)),
+                          IconButton(
+                            tooltip: l.payNowCopyNumber,
+                            onPressed: () => copyPayNow(transfer.toUserId),
+                            icon: const Icon(Icons.copy_outlined),
+                          ),
+                        ]),
+                      ],
+                      Wrap(spacing: 10, runSpacing: 8, children: [
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : () => shareRequest(transfer),
+                          icon: const Icon(Icons.share_outlined),
+                          label: Text(l.payNowShareRequest),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : () => recordReceipt(transfer),
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: Text(l.repaymentConfirmReceived),
+                        ),
+                      ]),
                     ],
                   ],
                 ),
