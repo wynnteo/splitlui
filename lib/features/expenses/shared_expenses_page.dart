@@ -424,39 +424,42 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
     setState(() => saving = true);
     try {
-      String createdId;
-      if (payFromFund) {
-        createdId = await widget.api.addFundPurchase(
+      if (!payFromFund) {
+        // Persist first and let the outbox retry when connectivity returns.
+        // The same operation UUID is reused on every retry.
+        await OfflineExpenseOutbox.instance.queue(
           groupId: widget.groupId,
           title: title.text,
-          amount: double.parse(amount.text.trim()),
+          amount: amount.text.trim(),
           currency: expenseCurrency,
           rateToSpending: expenseCurrency == widget.currency
-              ? 1 : double.parse(exchangeRate.text.trim()),
-        );
-      } else {
-        createdId = await widget.api.add(
-          groupId: widget.groupId,
-          title: title.text,
-          amount: double.parse(amount.text.trim()),
-          currency: expenseCurrency,
-          rateToSpending: expenseCurrency == widget.currency
-              ? 1 : double.parse(exchangeRate.text.trim()),
+              ? '1' : exchangeRate.text.trim(),
           paidBy: payer!,
-          splitBetween: widget.members
-              .map((m) => m['user_id'] as String)
+          participants: widget.members
+              .map((member) => member['user_id'] as String)
               .where(selected.contains).toList(),
+          receipt: receipt?.jpeg,
         );
+        if (mounted) Navigator.pop(context, true);
+        return;
       }
-      // The expense is already committed. A failed receipt upload must not
-      // tempt users to create a duplicate charge by pressing Save again.
+
+      // Fund spending must stay online and be authorised by the server's
+      // locked-balance RPC. Never show it as confirmed without a response.
+      final createdId = await widget.api.addFundPurchase(
+        groupId: widget.groupId,
+        title: title.text,
+        amount: double.parse(amount.text.trim()),
+        currency: expenseCurrency,
+        rateToSpending: expenseCurrency == widget.currency
+            ? 1 : double.parse(exchangeRate.text.trim()),
+      );
       if (receipt != null) {
         try {
           await receiptStorage.upload(
             groupId: widget.groupId,
             jpeg: receipt!.jpeg,
-            expenseId: payFromFund ? null : createdId,
-            fundEntryId: payFromFund ? createdId : null,
+            fundEntryId: createdId,
           );
         } catch (_) {
           if (mounted) {
