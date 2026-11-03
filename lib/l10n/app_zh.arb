@@ -180,5 +180,13 @@
   "deleteExpenseWarning": "确定删除此开销和成员分摊吗？欠款将重新计算。已有确认还款的群组不可修改开销。",
   "expenseReceiptCleanupWarning": "开销已删除，但收据照片清理失败，请联系管理员处理。",
   "expenseReceiptDate": "收据日期",
-  "expenseChooseDate": "选择收据日期"
+  "expenseChooseDate": "选择收据日期",
+  "offlinePendingHeading": "离线保存 · 等待同步",
+  "offlineRetry": "立即同步",
+  "offlinePending": "已保存到本机 · 尚未同步",
+  "offlineNeedsReview": "同步需处理 · 联网后重试",
+  "offlineReceiptPending": "开销已同步 · 收据待上传",
+  "offlineReadOnlySnapshot": "正在显示本机缓存的开销。联网前余额可能不是最新的。",
+  "offlineReadOnlyDetails": "离线缓存资料。成员分摊、收据下载和编辑需要联网；其他设备可能已修改金额。",
+  "offlinePendingDetails": "这笔开销已保存在本机。服务器确认前不会计入群组余额。等待同步期间请勿重复新增。"
 }

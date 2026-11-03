@@ -180,5 +180,13 @@
   "deleteExpenseWarning": "Delete this expense and its member shares? Outstanding balances will be recalculated. Expenses cannot be changed after confirmed repayments.",
   "expenseReceiptCleanupWarning": "Expense deleted, but its stored receipt photo could not be removed. Please contact support for cleanup.",
   "expenseReceiptDate": "Receipt date",
-  "expenseChooseDate": "Choose receipt date"
+  "expenseChooseDate": "Choose receipt date",
+  "offlinePendingHeading": "Saved offline · Waiting to sync",
+  "offlineRetry": "Sync now",
+  "offlinePending": "Saved on this device · Not yet synced",
+  "offlineNeedsReview": "Sync needs attention · Retry when connected",
+  "offlineReceiptPending": "Expense synced · Receipt upload pending",
+  "offlineReadOnlySnapshot": "Showing saved expenses from this device. Balances may be outdated until connected.",
+  "offlineReadOnlyDetails": "Offline snapshot. Member splits, receipt downloads and editing require an internet connection. Amounts may have changed on another device.",
+  "offlinePendingDetails": "This expense has been stored on this device. It is not included in shared balances until the server confirms it. Do not enter it again while waiting for sync."
 }

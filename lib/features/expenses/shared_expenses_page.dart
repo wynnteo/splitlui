@@ -1,9 +1,12 @@
+import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'receipt_capture.dart';
+import 'offline_expense_outbox.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -118,14 +121,37 @@ class SharedExpensesPage extends StatefulWidget {
   @override State<SharedExpensesPage> createState() => _SharedExpensesPageState();
 }
 
-class _SharedExpensesPageState extends State<SharedExpensesPage> {
+class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBindingObserver {
   final api = SharedExpenseApi();
   List<Map<String, dynamic>> expenses = [];
   List<Map<String,dynamic>> fundPurchases = [];
+  List<Map<String,Object?>> queuedExpenses = [];
+  bool showingOfflineSnapshot = false;
+  bool _refreshing = false;
+  StreamSubscription<List<ConnectivityResult>>? _networkSubscription;
   bool busy = true;
   String? error;
 
-  @override void initState() { super.initState(); refresh(); }
+  @override void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _networkSubscription = Connectivity().onConnectivityChanged.listen((states) {
+      if (states.any((state) => state != ConnectivityResult.none) && mounted) {
+        refresh();
+      }
+    });
+    refresh();
+  }
+
+  @override void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _networkSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !busy) refresh();
+  }
 
   String memberName(String? id) {
     for (final m in widget.members) {
@@ -135,19 +161,45 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
   }
 
   Future<void> refresh() async {
-    setState(() { busy = true; error = null; });
+    if (_refreshing) return;
+    _refreshing = true;
+    if (mounted) setState(() { busy = true; error = null; });
     try {
+      // Pending entries always come from device storage first so they remain
+      // visible even when connectivity is unavailable.
+      final storage = OfflineExpenseOutbox.instance;
+      final before = await storage.pending(widget.groupId);
+      final cached = await storage.cachedExpenses(widget.groupId);
+      if (mounted) setState(() {
+        queuedExpenses = before;
+        if (cached.isNotEmpty) {
+          expenses = cached;
+          showingOfflineSnapshot = true;
+        }
+      });
+      await OfflineExpenseOutbox.instance.sync(widget.groupId);
+      final after = await OfflineExpenseOutbox.instance.pending(widget.groupId);
+      if (mounted) setState(() => queuedExpenses = after);
       final result = await Future.wait([
         api.list(widget.groupId),
         api.fundPurchases(widget.groupId),
       ]);
+      await storage.cacheExpenses(widget.groupId, result[0]);
       if (mounted) setState(() {
         expenses = result[0];
         fundPurchases = result[1];
+        showingOfflineSnapshot = false;
       });
     } catch (e) {
-      if (mounted) setState(() => error = e.toString());
+      if (mounted) {
+        // Do not erase the last local or online data on network failure.
+        setState(() {
+          error = e.toString();
+          if (expenses.isNotEmpty) showingOfflineSnapshot = true;
+        });
+      }
     } finally {
+      _refreshing = false;
       if (mounted) setState(() => busy = false);
     }
   }
@@ -215,6 +267,55 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content:Text(e.toString())));
     }
+  }
+
+  Future<void> showQueuedExpense(Map<String,Object?> item) async {
+    final l=AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context:context,showDragHandle:true,useSafeArea:true,
+      builder:(ctx)=>Padding(
+        padding:const EdgeInsets.fromLTRB(20,8,20,26),
+        child:Column(mainAxisSize:MainAxisSize.min,
+          crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(item['title'] as String,
+              style:Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height:12),
+            Text('${item['currency']} ${item['amount']}'),
+            const SizedBox(height:12),
+            Text(l.offlinePendingDetails,
+              style:Theme.of(context).textTheme.bodySmall),
+            if (item['last_error'] != null) ...[
+              const SizedBox(height:12),
+              SelectableText(item['last_error'] as String,
+                style:Theme.of(context).textTheme.bodySmall),
+            ],
+          ]),
+      ),
+    );
+  }
+
+  Future<void> showCachedExpense(Map<String,dynamic> expense) async {
+    final l = AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context:context, showDragHandle:true, useSafeArea:true,
+      builder:(sheetContext)=>Padding(
+        padding:const EdgeInsets.fromLTRB(20,8,20,30),
+        child:Column(mainAxisSize:MainAxisSize.min,
+          crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(expense['title'] as String,
+            style:Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height:12),
+          Text('${expense['currency']} ${(expense['amount'] as num).toStringAsFixed(2)}',
+            style:Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height:8),
+          Text(l.paidBy + ': ' +
+            memberName(expense['paid_by'] as String?)),
+          const SizedBox(height:12),
+          Text(l.offlineReadOnlyDetails,
+            style:Theme.of(context).textTheme.bodySmall),
+        ]),
+      ),
+    );
   }
 
   Future<void> showShares(Map<String, dynamic> expense) async {
@@ -335,11 +436,54 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
           FilledButton.icon(
             onPressed: widget.members.isEmpty || busy ? null : createExpense,
             icon: const Icon(Icons.add_rounded), label: Text(l.addExpense)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          if (showingOfflineSnapshot)
+            Padding(
+              padding: const EdgeInsets.only(bottom:12),
+              child: Row(children:[
+                Icon(Icons.wifi_off_rounded, color: scheme.onSurfaceVariant),
+                const SizedBox(width:8),
+                Expanded(child: Text(l.offlineReadOnlySnapshot,
+                  style:Theme.of(context).textTheme.bodySmall)),
+              ]),
+            ),
+          if (queuedExpenses.isNotEmpty) ...[
+            Row(children: [
+              Icon(Icons.cloud_upload_outlined, size: 21,
+                color: scheme.primary),
+              const SizedBox(width: 8),
+              Expanded(child: Text(l.offlinePendingHeading,
+                style: Theme.of(context).textTheme.titleMedium)),
+              TextButton.icon(onPressed: busy ? null : refresh,
+                icon: const Icon(Icons.sync_rounded),
+                label: Text(l.offlineRetry)),
+            ]),
+            const SizedBox(height: 6),
+            for (final item in queuedExpenses) ...[
+              Card(child: ListTile(
+                leading: Icon(item['status'] == 'needs_review'
+                    ? Icons.error_outline : Icons.schedule_rounded,
+                  color: item['status'] == 'needs_review'
+                    ? scheme.error : scheme.primary),
+                title: Text(item['title'] as String),
+                subtitle: Text(item['status'] == 'receipt_pending'
+                  ? l.offlineReceiptPending
+                  : item['status'] == 'needs_review'
+                    ? l.offlineNeedsReview
+                    : l.offlinePending),
+                trailing: Text('${item['currency']} ${item['amount']}',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+                onTap: () => showQueuedExpense(item),
+              )),
+              const SizedBox(height: 8),
+            ],
+            const Divider(height: 20),
+          ],
           if (busy) const Center(child: CircularProgressIndicator()),
           if (error != null) Text(error!, style: TextStyle(color: scheme.error)),
           if (!busy && error == null &&
-              expenses.isEmpty && fundPurchases.isEmpty)
+              expenses.isEmpty && fundPurchases.isEmpty &&
+              queuedExpenses.isEmpty)
             Card(child: Padding(padding: const EdgeInsets.all(24),
               child: Text(l.noExpenses, textAlign: TextAlign.center))),
           for (final purchase in fundPurchases) ...[
@@ -379,7 +523,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                       style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
-              onTap: () => showShares(expense),
+              onTap: () => showingOfflineSnapshot
+                ? showCachedExpense(expense) : showShares(expense),
             ),
             const SizedBox(height: 10),
           ],
@@ -559,6 +704,26 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           receiptDate:receiptDate,
         );
         if (mounted) Navigator.pop(context,true);
+        return;
+      }
+      if (!payFromFund) {
+        // Offline-first: save to durable SQLite before navigating away.
+        // One immutable UUID is used for every server retry.
+        await OfflineExpenseOutbox.instance.queue(
+          groupId: widget.groupId,
+          title: title.text,
+          amount: amount.text.trim(),
+          currency: expenseCurrency,
+          rateToSpending: expenseCurrency == widget.currency
+            ? '1' : exchangeRate.text.trim(),
+          paidBy: payer!,
+          participants: widget.members
+            .map((m) => m['user_id'] as String)
+            .where(selected.contains).toList(),
+          receipt: receipt?.jpeg,
+          receiptDate: receiptDate,
+        );
+        if (mounted) Navigator.pop(context, true);
         return;
       }
       String createdId;

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart' show CreateGroup, Group;
 import '../expenses/shared_expenses_page.dart';
+import '../expenses/offline_expense_outbox.dart';
 import '../fund/common_fund_page.dart';
 import '../settlement/settlement_page.dart';
 import '../../ui/lui_style.dart';
@@ -94,7 +95,13 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       nickname = prefs.getString('shared_nickname') ?? '';
+      final cache = OfflineExpenseOutbox.instance;
+      try {
+        final saved = await cache.cachedGroups();
+        if (mounted) setState(() => groups = saved);
+      } catch (_) { /* Fresh sign-ins may not have a cache yet. */ }
       final result = await api.groups();
+      await cache.cacheGroups(result);
       final legacy = <Group>[];
       try {
         final raw = prefs.getString('groups_v1');
@@ -336,7 +343,16 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
     setState(() { busy = true; error = null; });
     try {
       final id = group['id'] as String;
+      final cache = OfflineExpenseOutbox.instance;
+      try {
+        final saved = await cache.cachedMembers(id);
+        if (mounted && saved.isNotEmpty) {
+          setState(() => members = saved);
+        }
+      } catch (_) { /* Cache not available for this identity. */ }
       final data = await widget.api.members(id);
+      await cache.cacheMembers(id, data);
+      // Invite links are deliberately NOT cached offline.
       final token = await widget.api.invite(id);
       if (mounted) setState(() { members = data; invite = token; });
     } catch (e) {
@@ -497,13 +513,13 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           const SizedBox(height: 16),
           Row(children: [
             Expanded(child: OutlinedButton.icon(
-              onPressed: busy ? null : editGroup,
+              onPressed: busy || error != null ? null : editGroup,
               icon: const Icon(Icons.edit_outlined),
               label: Text(l.editGroup),
             )),
             const SizedBox(width: 10),
             OutlinedButton.icon(
-              onPressed: busy ? null : deleteGroup,
+              onPressed: busy || error != null ? null : deleteGroup,
               icon: const Icon(Icons.delete_outline),
               label: Text(l.deleteGroup),
             ),
@@ -514,7 +530,7 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           icon: Icons.receipt_long_outlined,
           title: l.expenses,
           subtitle: l.expenseEntryHint,
-          onTap: busy || error != null ? null : () =>
+          onTap: busy || members.isEmpty ? null : () =>
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => SharedExpensesPage(
                 groupId: group['id'] as String,
