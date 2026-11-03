@@ -163,6 +163,60 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
     if (mounted && added == true) await refresh();
   }
 
+  Future<void> editExpense(Map<String,dynamic> expense) async {
+    final changed = await Navigator.push<bool>(context,MaterialPageRoute(
+      builder: (_) => AddSharedExpensePage(
+        api:api, groupId:widget.groupId, currency:widget.currency,
+        settlementCurrency:widget.settlementCurrency,
+        groupRate:widget.groupRate, members:widget.members,
+        initialExpense:expense,
+      ),
+    ));
+    if (mounted && changed == true) await refresh();
+  }
+
+  Future<void> deleteExpense(Map<String,dynamic> expense) async {
+    final l = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context:context,
+      builder:(dialogContext)=>AlertDialog(
+        title:Text(l.deleteExpense),
+        content:Text(l.deleteExpenseWarning),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(dialogContext,false),
+            child:Text(l.cloudCancel)),
+          FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),
+            child:Text(l.deleteExpense)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      // Read linked object path before deleting its mapping. After the
+      // financial RPC succeeds, remove storage as a best-effort cleanup.
+      String? receiptPath;
+      try {
+        final link = await ReceiptStorage().get(
+          expenseId:expense['id'] as String);
+        receiptPath = link?['object_path'] as String?;
+      } catch (_) {}
+      await api.delete(groupId:widget.groupId,original:expense);
+      if (receiptPath != null) {
+        try {
+          await Supabase.instance.client.storage
+            .from(ReceiptStorage.bucket).remove([receiptPath]);
+        } catch (_) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content:Text(l.expenseReceiptCleanupWarning)));
+        }
+      }
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(e.toString())));
+    }
+  }
+
   Future<void> showShares(Map<String, dynamic> expense) async {
     final l = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
@@ -187,6 +241,28 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                   style: Theme.of(context).textTheme.bodySmall),
               ],
               ReceiptAttachmentPreview(expenseId: expense['id'] as String),
+              if (expense['created_by'] ==
+                  Supabase.instance.client.auth.currentUser?.id) ...[
+                const SizedBox(height: 10),
+                Wrap(spacing:8,runSpacing:8,children:[
+                  OutlinedButton.icon(
+                    onPressed:(){
+                      Navigator.pop(context);
+                      editExpense(expense);
+                    },
+                    icon:const Icon(Icons.edit_outlined),
+                    label:Text(l.editExpense),
+                  ),
+                  TextButton.icon(
+                    onPressed:(){
+                      Navigator.pop(context);
+                      deleteExpense(expense);
+                    },
+                    icon:const Icon(Icons.delete_outline),
+                    label:Text(l.deleteExpense),
+                  ),
+                ]),
+              ],
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
