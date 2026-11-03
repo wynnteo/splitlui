@@ -82,5 +82,15 @@
   "thaiBaht": "THB · 泰铢 (฿)",
   "localOnlyFeatures": "此群组只储存在当前设备。要使用多人记账、共同基金和成员管理，请进入「多人共享群组」。",
   "openSharedGroups": "打开多人共享群组",
-  "createLocalGroup": "创建本地群组"
+  "createLocalGroup": "创建本地群组",
+  "editGroup": "编辑群组",
+  "saveChanges": "保存修改",
+  "groupUpdated": "群组已更新",
+  "deleteGroup": "删除群组",
+  "typeGroupName": "请输入群组名称以永久删除群组及所有开销、共同基金和成员资料",
+  "olderDeviceGroups": "旧版本地群组",
+  "olderDeviceGroupsHint": "这些群组是在启用云端同步前创建的。转移到线上后，才可以使用开销及共同基金功能。",
+  "moveToGroups": "转移到群组",
+  "deleteLocalGroup": "删除本地群组？",
+  "deleteLocalWarning": "此操作会从手机永久移除此群组，无法恢复。"
 }
