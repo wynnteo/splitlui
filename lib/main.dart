@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/groups/shared_groups_page.dart';
+import 'features/settlement/repayment_preferences.dart';
 import 'ui/lui_style.dart';
 import 'l10n/generated/app_localizations.dart';
 
@@ -445,12 +446,24 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   late ThemeMode selectedMode;
   late String selectedLanguage;
+  String preferredRepaymentCurrency = 'SGD';
 
   @override
   void initState() {
     super.initState();
     selectedMode = widget.mode;
     selectedLanguage = widget.language;
+    loadPreferredCurrency();
+  }
+
+  Future<void> loadPreferredCurrency() async {
+    final currency = await RepaymentPreferences.getDefault();
+    if (mounted) setState(() => preferredRepaymentCurrency = currency);
+  }
+
+  Future<void> choosePreferredCurrency(String currency) async {
+    await RepaymentPreferences.setDefault(currency);
+    if (mounted) setState(() => preferredRepaymentCurrency = currency);
   }
 
   @override
@@ -550,6 +563,18 @@ class _SettingsState extends State<Settings> {
             title: '简体中文', icon: Icons.translate_outlined,
             selected: selectedLanguage == 'zh',
             onTap: () => changeLanguage('zh')),
+        ]),
+        const SizedBox(height: 30),
+        sectionHeader(l.repaymentDefaultCurrency, l.repaymentDefaultCurrencyHint),
+        choiceCard([
+          choiceTile(
+            title: 'SGD', icon: Icons.payments_outlined,
+            selected: preferredRepaymentCurrency == 'SGD',
+            onTap: () => choosePreferredCurrency('SGD')),
+          choiceTile(
+            title: 'MYR', icon: Icons.currency_exchange_outlined,
+            selected: preferredRepaymentCurrency == 'MYR',
+            onTap: () => choosePreferredCurrency('MYR')),
         ]),
         const SizedBox(height: 34),
         Center(child: Text(l.version,

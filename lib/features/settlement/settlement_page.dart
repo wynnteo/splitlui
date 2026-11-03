@@ -7,6 +7,7 @@ import '../../ui/lui_style.dart';
 import 'settlement_calculator.dart';
 import 'expense_currency_summary.dart';
 import 'paynow_settings_page.dart';
+import 'repayment_preferences.dart';
 
 /// Settlement preview only: no transfer is executed or marked as paid.
 class SettlementPage extends StatefulWidget {
@@ -74,7 +75,7 @@ class _SettlementPageState extends State<SettlementPage> {
       final shares = await readAll('trip_expense_shares',
           'expense_id,user_id,share_spending');
       final receiptRows = await readAll('trip_repayments',
-        'id,from_user_id,to_user_id,amount_spending,note,created_at');
+        'id,from_user_id,to_user_id,amount_spending,paid_amount,paid_currency,paid_rate_to_spending,note,created_at');
       final payNowRows = await payNowApi.getAll(widget.groupId);
       final summary = ExpenseCurrencySummary.calculate(
         expenses: expenses,
@@ -109,7 +110,9 @@ class _SettlementPageState extends State<SettlementPage> {
     final recorded = await Navigator.push<bool>(context, MaterialPageRoute(
       builder: (_) => RepaymentReceiptForm(
         groupId: widget.groupId,
-        currency: widget.spendingCurrency,
+        spendingCurrency: widget.spendingCurrency,
+        settlementCurrency: widget.settlementCurrency,
+        groupRate: widget.exchangeRate,
         senderName: nameOf(transfer.fromUserId),
         receiverName: nameOf(transfer.toUserId),
         fromUserId: transfer.fromUserId,
@@ -474,9 +477,14 @@ class _SettlementPageState extends State<SettlementPage> {
                     ' → ' + nameOf(receipt['to_user_id'] as String),
                 subtitle: l.repaymentReceivedRecorded +
                   ((receipt['note'] as String).isEmpty
-                    ? '' : ' · ' + (receipt['note'] as String)),
-                trailing: Text(widget.spendingCurrency + ' ' +
-                  (receipt['amount_spending'] as num).toStringAsFixed(2),
+                    ? '' : ' · ' + (receipt['note'] as String)) +
+                  ((receipt['paid_currency'] as String) != widget.spendingCurrency
+                    ? '\n' + l.repaymentLedgerEquivalent + ': ' +
+                      widget.spendingCurrency + ' ' +
+                      (receipt['amount_spending'] as num).toStringAsFixed(2)
+                    : ''),
+                trailing: Text((receipt['paid_currency'] as String) + ' ' +
+                  (receipt['paid_amount'] as num).toStringAsFixed(2),
                   style: const TextStyle(fontWeight: FontWeight.w700)),
               ),
               const SizedBox(height: 10),
@@ -520,45 +528,114 @@ class _SettlementPageState extends State<SettlementPage> {
 
 class RepaymentReceiptForm extends StatefulWidget {
   const RepaymentReceiptForm({
-    super.key, required this.groupId, required this.currency,
-    required this.senderName, required this.receiverName,
-    required this.fromUserId, required this.toUserId,
+    super.key,
+    required this.groupId,
+    required this.spendingCurrency,
+    required this.settlementCurrency,
+    required this.groupRate,
+    required this.senderName,
+    required this.receiverName,
+    required this.fromUserId,
+    required this.toUserId,
     required this.maxCents,
   });
-  final String groupId, currency, senderName, receiverName;
-  final String fromUserId, toUserId;
+
+  final String groupId, spendingCurrency, settlementCurrency;
+  final String senderName, receiverName, fromUserId, toUserId;
+  final double groupRate;
   final int maxCents;
-  @override State<RepaymentReceiptForm> createState() => _RepaymentReceiptFormState();
+
+  @override State<RepaymentReceiptForm> createState() =>
+      _RepaymentReceiptFormState();
 }
 
 class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
   final formKey = GlobalKey<FormState>();
-  final amount = TextEditingController();
+  final paidAmount = TextEditingController();
+  final rate = TextEditingController();
   final note = TextEditingController();
+  String currency = 'SGD';
   bool saving = false;
+  bool loading = true;
 
-  @override void initState() {
+  List<String> get currencies => {
+    'SGD', 'MYR', widget.spendingCurrency,
+  }.toList();
+
+  @override
+  void initState() {
     super.initState();
-    amount.text = (widget.maxCents / 100).toStringAsFixed(2);
+    loadPreference();
   }
 
-  @override void dispose() {
-    amount.dispose();
+  Future<void> loadPreference() async {
+    final saved = await RepaymentPreferences.getDefault();
+    if (!mounted) return;
+    setState(() {
+      currency = saved;
+      loading = false;
+      applyCurrencyDefaults();
+    });
+  }
+
+  void applyCurrencyDefaults() {
+    final conversion = currentDefaultRate;
+    rate.text = conversion == null ? '' : conversion.toString();
+    if (conversion != null && conversion > 0) {
+      // Prepopulate the approximate full balance. Recipients can overwrite it
+      // with the amount actually received (including partial repayments).
+      paidAmount.text = (widget.maxCents / 100 / conversion).toStringAsFixed(2);
+    } else {
+      paidAmount.clear();
+    }
+  }
+
+  double? get currentDefaultRate {
+    if (currency == widget.spendingCurrency) return 1;
+    if (currency == widget.settlementCurrency &&
+        widget.groupRate.isFinite && widget.groupRate > 0) {
+      return widget.groupRate;
+    }
+    // SGD -> MYR (or vice versa) is not derived from a THB -> SGD rate.
+    // Users must enter an agreed manual rate when not in the group pair.
+    return null;
+  }
+
+  double? get spendingEquivalent {
+    final value = double.tryParse(paidAmount.text.trim());
+    final conversion = double.tryParse(rate.text.trim());
+    if (value == null || conversion == null || !value.isFinite ||
+        !conversion.isFinite || value <= 0 || conversion <= 0) return null;
+    final spending = (value * conversion * 100).round() / 100;
+    return spending.isFinite ? spending : null;
+  }
+
+  @override
+  void dispose() {
+    paidAmount.dispose();
+    rate.dispose();
     note.dispose();
     super.dispose();
   }
 
   Future<void> save() async {
-    if (saving || !(formKey.currentState?.validate() ?? false)) return;
+    if (saving || loading || !(formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     setState(() => saving = true);
     try {
-      await Supabase.instance.client.rpc('record_trip_repayment', params: {
-        'p_group': widget.groupId,
-        'p_from': widget.fromUserId,
-        'p_to': widget.toUserId,
-        'p_amount': double.parse(amount.text.trim()),
-        'p_note': note.text.trim(),
-      });
+      await Supabase.instance.client.rpc(
+        'record_trip_repayment_currency',
+        params: {
+          'p_group': widget.groupId,
+          'p_from': widget.fromUserId,
+          'p_to': widget.toUserId,
+          'p_paid_amount': double.parse(paidAmount.text.trim()),
+          'p_currency': currency,
+          'p_rate_to_spending': double.parse(rate.text.trim()),
+          'p_note': note.text.trim(),
+        },
+      );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -568,43 +645,106 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
     }
   }
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l.repaymentConfirmReceived)),
-      body: SafeArea(top: false, child: Form(key: formKey,
+      body: SafeArea(top: false, child: Form(
+        key: formKey,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           children: [
             Text(widget.senderName + ' → ' + widget.receiverName,
               style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(l.repaymentConfirmWarning,
               style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 22),
-            LuiFormLabel(l.expenseAmount),
+            const SizedBox(height: 12),
+            Text(l.repaymentOutstanding + ': ' + widget.spendingCurrency +
+              ' ' + (widget.maxCents / 100).toStringAsFixed(2)),
+            const SizedBox(height: 24),
+            LuiFormLabel(l.repaymentPaidCurrency),
+            DropdownButtonFormField<String>(
+              value: currency,
+              isExpanded: true,
+              items: currencies.map((c) =>
+                DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: saving || loading ? null : (value) {
+                if (value == null) return;
+                setState(() {
+                  currency = value;
+                  applyCurrencyDefaults();
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+            LuiFormLabel(l.repaymentPaidAmount),
             TextFormField(
-              controller: amount,
+              controller: paidAmount,
+              enabled: !loading && !saving,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(prefixText: widget.currency + ' '),
+              decoration: InputDecoration(prefixText: currency + ' '),
+              onChanged: (_) => setState(() {}),
               validator: (raw) {
                 final value = (raw ?? '').trim();
                 final parsed = double.tryParse(value);
                 if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(value) ||
                     parsed == null || !parsed.isFinite || parsed <= 0 ||
-                    parsed > widget.maxCents / 100) return l.invalid;
+                    parsed > 99999999999999.99) return l.invalid;
                 return null;
               },
             ),
+            const SizedBox(height: 20),
+            LuiFormLabel(l.repaymentConversionRate),
+            TextFormField(
+              controller: rate,
+              enabled: !loading && !saving && currentDefaultRate == null,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                helperText: '1 ' + currency + ' = ? ' + widget.spendingCurrency,
+                helperMaxLines: 2,
+              ),
+              onChanged: (_) => setState(() {}),
+              validator: (raw) {
+                final text = (raw ?? '').trim();
+                final parsed = double.tryParse(text);
+                if (!RegExp(r'^\d+(\.\d{1,8})?$').hasMatch(text) ||
+                    parsed == null || !parsed.isFinite || parsed <= 0 ||
+                    parsed > 99999999999999) return l.invalid;
+                if (currency == widget.spendingCurrency && parsed != 1) {
+                  return l.invalid;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            Text(l.repaymentRateHint,
+              style: Theme.of(context).textTheme.bodySmall),
+            if (spendingEquivalent != null) ...[
+              const SizedBox(height: 12),
+              Text(l.repaymentLedgerEquivalent + ': ' +
+                widget.spendingCurrency + ' ' +
+                spendingEquivalent!.toStringAsFixed(2),
+                style: Theme.of(context).textTheme.titleMedium),
+              if (spendingEquivalent! > widget.maxCents / 100)
+                Text(l.repaymentExceedsOutstanding,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error)),
+            ],
             const SizedBox(height: 22),
             LuiFormLabel(l.repaymentNote),
             TextFormField(
-              controller: note, maxLength: 120,
+              controller: note,
+              maxLength: 120,
               decoration: InputDecoration(hintText: l.repaymentNoteHint),
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: saving ? null : save,
+              onPressed: saving || loading || spendingEquivalent == null ||
+                  spendingEquivalent! <= 0 ||
+                  spendingEquivalent! > widget.maxCents / 100
+                  ? null : save,
               icon: const Icon(Icons.verified_outlined),
               label: Text(l.repaymentConfirmReceived),
             ),
