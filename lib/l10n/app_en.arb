@@ -148,5 +148,9 @@
   "settlementLedgerNote": "Repayment records are still tracked in the group's spending currency",
   "settlementConvertedEstimate": "Converted estimate",
   "payNowReceivesFrom": "To receive",
-  "payNowFromMember": "From"
+  "payNowFromMember": "From",
+  "expenseOriginalTotal": "Paid in this currency",
+  "expenseCombinedTotal": "Combined total",
+  "expenseCombinedRateNote": "Original payments stay in their own currency. The combined estimate converts the trip spending currency using the registered group exchange rate. Shared member-paid expenses only; Common Fund purchases are excluded.",
+  "expenseCombinedRateMixed": "Original payments stay in their own currency. The trip spending currency uses the registered group rate; any other currencies use the saved expense conversions. Shared member-paid expenses only; Common Fund purchases are excluded."
 }

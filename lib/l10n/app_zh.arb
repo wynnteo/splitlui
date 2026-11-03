@@ -148,5 +148,9 @@
   "settlementLedgerNote": "已确认的还款仍以群组消费货币记录",
   "settlementConvertedEstimate": "换算参考金额",
   "payNowReceivesFrom": "待收款",
-  "payNowFromMember": "付款人"
+  "payNowFromMember": "付款人",
+  "expenseOriginalTotal": "以此货币支付",
+  "expenseCombinedTotal": "合计",
+  "expenseCombinedRateNote": "保留实际付款货币；合计仅使用群组设定汇率换算旅程消费货币。这里只统计成员垫付的分摊开销，不包含共同基金支出。",
+  "expenseCombinedRateMixed": "保留实际付款货币；旅程消费货币依群组汇率换算，其他货币依每笔开销已保存的汇率换算。这里只统计成员垫付的分摊开销，不包含共同基金支出。"
 }
