@@ -211,5 +211,7 @@
   "fundTotalSpent": "Fund purchases",
   "fundClosingNotFinal": "Reconciliation preview only. This does not close the fund or pay anyone. Resolve outstanding contributions and confirm agreed refunds before closing the trip.",
   "fundReconciliationMismatch": "Warning: fund balance does not reconcile with received contributions, purchases and confirmed refunds.",
-  "fundAdvancedLoadError": "Could not load fund targets and refunds. Check your connection and Supabase migration."
+  "fundAdvancedLoadError": "Could not load fund targets and refunds. Check your connection and Supabase migration.",
+  "fundRefundHistory": "Confirmed refunds",
+  "fundNoRefunds": "No refunds confirmed yet."
 }
