@@ -132,5 +132,11 @@
   "payNowCopyNumber": "复制 PayNow 号码",
   "payNowShareRequest": "分享付款请求",
   "payNowEstimatedSgd": "参考新币金额（付款前请确认汇率）",
-  "payNowAgreeSgd": "PayNow 以新币转账，付款前请与收款人确认实际 SGD 金额。"
+  "payNowAgreeSgd": "PayNow 以新币转账，付款前请与收款人确认实际 SGD 金额。",
+  "inviteShareHeading": "邀请你加入我的 SplitLui 群组！",
+  "inviteShareInstructions": "安装或打开 SplitLui，选择「加入群组」，然后贴上邀请码（或整段邀请消息）。",
+  "inviteInstallApp": "安装 SplitLui",
+  "inviteShareButton": "分享邀请",
+  "inviteShareHint": "请私下分享给你信任的人。任何拿到邀请码的人都可以加入，直到组织者重置邀请码。",
+  "inviteInvalidCode": "请贴上有效的邀请码或完整邀请消息。"
 }
