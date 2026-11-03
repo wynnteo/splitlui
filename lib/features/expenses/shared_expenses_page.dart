@@ -1,0 +1,284 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../../ui/lui_style.dart';
+
+class SharedExpenseApi {
+  final SupabaseClient db = Supabase.instance.client;
+
+  Future<List<Map<String, dynamic>>> list(String groupId) async {
+    final rows = await db.from('trip_expenses')
+        .select('id,title,amount,paid_by,created_at')
+        .eq('group_id', groupId).order('created_at', ascending: false);
+    return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<void> add({
+    required String groupId, required String title,
+    required double amount, required String paidBy,
+    required List<String> splitBetween,
+  }) async {
+    await db.rpc('add_trip_expense', params: {
+      'p_group': groupId, 'p_title': title.trim(), 'p_amount': amount,
+      'p_paid_by': paidBy, 'p_split_between': splitBetween,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> shares(String expenseId) async {
+    final rows = await db.from('trip_expense_shares')
+        .select('user_id,share_amount').eq('expense_id', expenseId);
+    return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+}
+
+class SharedExpensesPage extends StatefulWidget {
+  const SharedExpensesPage({
+    super.key, required this.groupId, required this.groupName,
+    required this.currency, required this.members,
+  });
+  final String groupId, groupName, currency;
+  final List<Map<String, dynamic>> members;
+
+  @override State<SharedExpensesPage> createState() => _SharedExpensesPageState();
+}
+
+class _SharedExpensesPageState extends State<SharedExpensesPage> {
+  final api = SharedExpenseApi();
+  List<Map<String, dynamic>> expenses = [];
+  bool busy = true;
+  String? error;
+
+  @override void initState() { super.initState(); refresh(); }
+
+  String memberName(String? id) {
+    for (final m in widget.members) {
+      if (m['user_id'] == id) return m['nickname'] as String? ?? '';
+    }
+    return id ?? '';
+  }
+
+  Future<void> refresh() async {
+    setState(() { busy = true; error = null; });
+    try {
+      final result = await api.list(widget.groupId);
+      if (mounted) setState(() => expenses = result);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> createExpense() async {
+    final added = await Navigator.push<bool>(context, MaterialPageRoute(
+      builder: (_) => AddSharedExpensePage(
+        api: api, groupId: widget.groupId,
+        currency: widget.currency, members: widget.members),
+    ));
+    if (mounted && added == true) await refresh();
+  }
+
+  Future<void> showShares(Map<String, dynamic> expense) async {
+    final l = AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, showDragHandle: true,
+      builder: (_) => FutureBuilder<List<Map<String, dynamic>>>(
+        future: api.shares(expense['id'] as String),
+        builder: (context, snapshot) => SafeArea(child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 26),
+          child: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(expense['title'] as String,
+                style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(l.paidBy + ': ' + memberName(expense['paid_by'] as String?)),
+              const SizedBox(height: 18),
+              if (snapshot.connectionState != ConnectionState.done)
+                const Center(child: CircularProgressIndicator())
+              else if (snapshot.hasError)
+                Text(snapshot.error.toString(), style: TextStyle(
+                  color: Theme.of(context).colorScheme.error))
+              else
+                for (final share in snapshot.data ?? [])
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(memberName(share['user_id'] as String?)),
+                    trailing: Text(widget.currency + ' ' +
+                      (share['share_amount'] as num).toStringAsFixed(2),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+            ]),
+        )),
+      ),
+    );
+  }
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.expenses),
+        actions: [IconButton(onPressed: busy ? null : refresh,
+          icon: const Icon(Icons.refresh_rounded), tooltip: l.cloudRefresh)]),
+      body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        children: [
+          Text(widget.groupName,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Text(widget.currency, style: TextStyle(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 22),
+          FilledButton.icon(
+            onPressed: widget.members.isEmpty || busy ? null : createExpense,
+            icon: const Icon(Icons.add_rounded), label: Text(l.addExpense)),
+          const SizedBox(height: 24),
+          if (busy) const Center(child: CircularProgressIndicator()),
+          if (error != null) Text(error!, style: TextStyle(color: scheme.error)),
+          if (!busy && error == null && expenses.isEmpty)
+            Card(child: Padding(padding: const EdgeInsets.all(24),
+              child: Text(l.noExpenses, textAlign: TextAlign.center))),
+          for (final expense in expenses) ...[
+            LuiFeatureTile(
+              icon: Icons.receipt_long_outlined,
+              title: expense['title'] as String,
+              subtitle: l.paidBy + ': ' +
+                memberName(expense['paid_by'] as String?),
+              trailing: Text(widget.currency + ' ' +
+                (expense['amount'] as num).toStringAsFixed(2),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+              onTap: () => showShares(expense),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ]),
+    );
+  }
+}
+
+class AddSharedExpensePage extends StatefulWidget {
+  const AddSharedExpensePage({
+    super.key, required this.api, required this.groupId,
+    required this.currency, required this.members,
+  });
+  final SharedExpenseApi api;
+  final String groupId, currency;
+  final List<Map<String, dynamic>> members;
+  @override State<AddSharedExpensePage> createState() => _AddSharedExpensePageState();
+}
+
+class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
+  final form = GlobalKey<FormState>();
+  final title = TextEditingController();
+  final amount = TextEditingController();
+  final selected = <String>{};
+  String? payer;
+  bool saving = false;
+
+  @override void initState() {
+    super.initState();
+    final ownId = Supabase.instance.client.auth.currentUser?.id;
+    payer = widget.members.any((m) => m['user_id'] == ownId)
+      ? ownId : (widget.members.isEmpty ? null :
+          widget.members.first['user_id'] as String);
+    selected.addAll(widget.members.map((m) => m['user_id'] as String));
+  }
+
+  @override void dispose() {
+    title.dispose(); amount.dispose(); super.dispose();
+  }
+
+  Future<void> save() async {
+    if (saving || !(form.currentState?.validate() ?? false)) return;
+    final l = AppLocalizations.of(context)!;
+    if (selected.isEmpty || payer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.selectParticipants)));
+      return;
+    }
+    setState(() => saving = true);
+    try {
+      await widget.api.add(
+        groupId: widget.groupId, title: title.text,
+        amount: double.parse(amount.text.trim()), paidBy: payer!,
+        splitBetween: widget.members.map((m) => m['user_id'] as String)
+          .where(selected.contains).toList(),
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.addExpense)),
+      body: Form(key: form, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+          LuiFormLabel(l.expenseTitle),
+          TextFormField(
+            controller: title, maxLength: 120,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(hintText: l.expenseTitleHint),
+            validator: (v) => (v ?? '').trim().isEmpty ? l.required : null),
+          const SizedBox(height: 16),
+          LuiFormLabel(l.expenseAmount),
+          TextFormField(
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(prefixText: widget.currency + ' '),
+            validator: (v) {
+              final raw = (v ?? '').trim();
+              final n = double.tryParse(raw);
+              if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(raw) ||
+                  n == null || !n.isFinite || n <= 0 ||
+                  n > 9999999999999999) return l.invalid;
+              return null;
+            },
+          ),
+          const SizedBox(height: 22),
+          LuiFormLabel(l.paidBy),
+          DropdownButtonFormField<String>(
+            value: payer, isExpanded: true,
+            decoration: const InputDecoration(),
+            items: widget.members.map((m) => DropdownMenuItem(
+              value: m['user_id'] as String,
+              child: Text(m['nickname'] as String))).toList(),
+            onChanged: saving ? null : (v) => setState(() => payer = v),
+          ),
+          const SizedBox(height: 24),
+          LuiFormLabel(l.splitBetween),
+          Card(child: Column(children: [
+            for (var i = 0; i < widget.members.length; i++) ...[
+              if (i > 0) const Divider(height: 1, indent: 16),
+              CheckboxListTile(
+                value: selected.contains(widget.members[i]['user_id']),
+                title: Text(widget.members[i]['nickname'] as String),
+                controlAffinity: ListTileControlAffinity.trailing,
+                onChanged: saving ? null : (checked) => setState(() {
+                  final id = widget.members[i]['user_id'] as String;
+                  if (checked == true) { selected.add(id); }
+                  else { selected.remove(id); }
+                }),
+              ),
+            ],
+          ])),
+          const SizedBox(height: 12),
+          Text(l.equalSplitOnly,
+            style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 28),
+          FilledButton(
+            onPressed: saving ? null : save,
+            child: saving
+              ? const SizedBox(height: 20, width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(l.saveExpense),
+          ),
+        ]),
+      )),
+    );
+  }
+}

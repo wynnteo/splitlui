@@ -50,5 +50,16 @@
   "nameHint": "例如：东京周末游",
   "settingsIntro": "调整 SplitLui 的使用偏好。",
   "appearanceHint": "选择适合你的显示模式。",
-  "languageHint": "选择 App 的显示语言。"
+  "languageHint": "选择 App 的显示语言。",
+  "addExpense": "添加开销",
+  "expenseTitle": "开销名称",
+  "expenseTitleHint": "例如：晚餐",
+  "expenseAmount": "金额",
+  "paidBy": "付款人",
+  "splitBetween": "分摊成员",
+  "equalSplitOnly": "目前支持所选成员平均分摊，金额会精确分配到分。",
+  "selectParticipants": "请至少选择一位分摊成员。",
+  "saveExpense": "保存开销",
+  "noExpenses": "目前还没有开销。添加第一笔开销吧。",
+  "expenseEntryHint": "添加和查看共同开销"
 }
