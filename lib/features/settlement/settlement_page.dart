@@ -189,6 +189,116 @@ class _SettlementPageState extends State<SettlementPage> {
       SnackBar(content: Text(AppLocalizations.of(context)!.payNowCopied)));
   }
 
+  List<String> get recipients {
+    final ids = <String>[];
+    for (final transfer in result?.transfers ?? <SuggestedTransfer>[]) {
+      if (!ids.contains(transfer.toUserId)) ids.add(transfer.toUserId);
+    }
+    return ids;
+  }
+
+  List<SuggestedTransfer> transfersTo(String recipientId) =>
+      (result?.transfers ?? <SuggestedTransfer>[])
+          .where((transfer) => transfer.toUserId == recipientId)
+          .toList();
+
+  Widget recipientCard(String recipientId, AppLocalizations l) {
+    final colors = Theme.of(context).colorScheme;
+    final lines = transfersTo(recipientId);
+    final totalCents = lines.fold<int>(
+      0, (sum, transfer) => sum + transfer.cents);
+    final payNow = payNowMobiles[recipientId];
+    final myId = Supabase.instance.client.auth.currentUser?.id;
+    final isRecipient = recipientId == myId;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            CircleAvatar(
+              child: Text(nameOf(recipientId).isEmpty
+                ? '?' : nameOf(recipientId)[0].toUpperCase())),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(nameOf(recipientId), style: Theme.of(context)
+                  .textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(l.payNowReceivesFrom.replaceAll('{count}', '${lines.length}'),
+                  style: Theme.of(context).textTheme.bodySmall),
+              ],
+            )),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(shownAmount(totalCents), style: Theme.of(context)
+                .textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              if (secondaryAmount(totalCents) != null)
+                Text(secondaryAmount(totalCents)!,
+                  style: Theme.of(context).textTheme.bodySmall),
+            ]),
+          ]),
+          const SizedBox(height: 12),
+          if (payNow != null && payNow.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+              child: Row(children: [
+                const Icon(Icons.account_balance_outlined, size: 19),
+                const SizedBox(width: 10),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PayNow', style: Theme.of(context).textTheme.labelSmall),
+                    Text('+65 $payNow', style: const TextStyle(
+                      fontWeight: FontWeight.w600)),
+                  ],
+                )),
+                IconButton(
+                  tooltip: l.payNowCopyNumber,
+                  onPressed: () => copyPayNow(recipientId),
+                  icon: const Icon(Icons.copy_outlined, size: 20),
+                ),
+              ]),
+            )
+          else
+            Text(l.payNowNoDetailsShared,
+              style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 12),
+          for (var index = 0; index < lines.length; index++) ...[
+            if (index > 0) const Divider(height: 24),
+            Row(children: [
+              Expanded(child: Text(l.payNowFromMember + ': ' +
+                  nameOf(lines[index].fromUserId),
+                style: Theme.of(context).textTheme.bodyMedium)),
+              const SizedBox(width: 8),
+              Text(shownAmount(lines[index].cents),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            ]),
+            if (isRecipient)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(spacing: 8, runSpacing: 6, children: [
+                  OutlinedButton.icon(
+                    onPressed: busy ? null : () => shareRequest(lines[index]),
+                    icon: const Icon(Icons.share_outlined, size: 18),
+                    label: Text(l.payNowShareRequest),
+                  ),
+                  TextButton.icon(
+                    onPressed: busy ? null : () => recordReceipt(lines[index]),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: Text(l.repaymentConfirmReceived),
+                  ),
+                ]),
+              ),
+          ],
+        ]),
+      ),
+    );
+  }
+
   String amount(int cents) =>
       widget.spendingCurrency + ' ' + (cents / 100).toStringAsFixed(2);
 
@@ -288,58 +398,8 @@ class _SettlementPageState extends State<SettlementPage> {
                 child: Text(l.settlementAllEven,
                   textAlign: TextAlign.center),
               )),
-            for (final transfer in result!.transfers) ...[
-              Card(child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Icon(Icons.send_rounded, color: colors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text(
-                        nameOf(transfer.fromUserId) + ' → ' +
-                        nameOf(transfer.toUserId),
-                        style: const TextStyle(fontWeight: FontWeight.w600))),
-                    ]),
-                    const SizedBox(height: 12),
-                    Text(shownAmount(transfer.cents),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700)),
-                    if (secondaryAmount(transfer.cents) != null)
-                      Text(secondaryAmount(transfer.cents)!,
-                        style: Theme.of(context).textTheme.bodySmall),
-                    if (Supabase.instance.client.auth.currentUser?.id ==
-                        transfer.toUserId) ...[
-                      const SizedBox(height: 12),
-                      if (payNowMobiles[transfer.toUserId] != null) ...[
-                        Row(children: [
-                          Expanded(child: Text('PayNow: +65 ' +
-                            payNowMobiles[transfer.toUserId]!,
-                            style: Theme.of(context).textTheme.bodyMedium)),
-                          IconButton(
-                            tooltip: l.payNowCopyNumber,
-                            onPressed: () => copyPayNow(transfer.toUserId),
-                            icon: const Icon(Icons.copy_outlined),
-                          ),
-                        ]),
-                      ],
-                      Wrap(spacing: 10, runSpacing: 8, children: [
-                        OutlinedButton.icon(
-                          onPressed: busy ? null : () => shareRequest(transfer),
-                          icon: const Icon(Icons.share_outlined),
-                          label: Text(l.payNowShareRequest),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: busy ? null : () => recordReceipt(transfer),
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: Text(l.repaymentConfirmReceived),
-                        ),
-                      ]),
-                    ],
-                  ],
-                ),
-              )),
+            for (final recipientId in recipients) ...[
+              recipientCard(recipientId, l),
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 22),
