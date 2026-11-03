@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'receipt_capture.dart';
+import 'offline_expense_outbox.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -118,14 +119,28 @@ class SharedExpensesPage extends StatefulWidget {
   @override State<SharedExpensesPage> createState() => _SharedExpensesPageState();
 }
 
-class _SharedExpensesPageState extends State<SharedExpensesPage> {
+class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBindingObserver {
   final api = SharedExpenseApi();
   List<Map<String, dynamic>> expenses = [];
   List<Map<String,dynamic>> fundPurchases = [];
+  List<Map<String,Object?>> queuedExpenses = [];
   bool busy = true;
   String? error;
 
-  @override void initState() { super.initState(); refresh(); }
+  @override void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    refresh();
+  }
+
+  @override void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !busy) refresh();
+  }
 
   String memberName(String? id) {
     for (final m in widget.members) {
@@ -135,8 +150,16 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
   }
 
   Future<void> refresh() async {
-    setState(() { busy = true; error = null; });
+    if (busy && queuedExpenses.isNotEmpty) return;
+    if (mounted) setState(() { busy = true; error = null; });
     try {
+      // Pending entries always come from device storage first so they remain
+      // visible even when connectivity is unavailable.
+      final before = await OfflineExpenseOutbox.instance.pending(widget.groupId);
+      if (mounted) setState(() => queuedExpenses = before);
+      await OfflineExpenseOutbox.instance.sync(widget.groupId);
+      final after = await OfflineExpenseOutbox.instance.pending(widget.groupId);
+      if (mounted) setState(() => queuedExpenses = after);
       final result = await Future.wait([
         api.list(widget.groupId),
         api.fundPurchases(widget.groupId),
@@ -146,7 +169,10 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
         fundPurchases = result[1];
       });
     } catch (e) {
-      if (mounted) setState(() => error = e.toString());
+      if (mounted) {
+        // Do not erase the last local or online data on network failure.
+        setState(() => error = e.toString());
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -335,11 +361,43 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
           FilledButton.icon(
             onPressed: widget.members.isEmpty || busy ? null : createExpense,
             icon: const Icon(Icons.add_rounded), label: Text(l.addExpense)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          if (queuedExpenses.isNotEmpty) ...[
+            Row(children: [
+              Icon(Icons.cloud_upload_outlined, size: 21,
+                color: scheme.primary),
+              const SizedBox(width: 8),
+              Expanded(child: Text(l.offlinePendingHeading,
+                style: Theme.of(context).textTheme.titleMedium)),
+              TextButton.icon(onPressed: busy ? null : refresh,
+                icon: const Icon(Icons.sync_rounded),
+                label: Text(l.offlineRetry)),
+            ]),
+            const SizedBox(height: 6),
+            for (final item in queuedExpenses) ...[
+              Card(child: ListTile(
+                leading: Icon(item['status'] == 'needs_review'
+                    ? Icons.error_outline : Icons.schedule_rounded,
+                  color: item['status'] == 'needs_review'
+                    ? scheme.error : scheme.primary),
+                title: Text(item['title'] as String),
+                subtitle: Text(item['status'] == 'receipt_pending'
+                  ? l.offlineReceiptPending
+                  : item['status'] == 'needs_review'
+                    ? l.offlineNeedsReview
+                    : l.offlinePending),
+                trailing: Text('${item['currency']} ${item['amount']}',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              )),
+              const SizedBox(height: 8),
+            ],
+            const Divider(height: 20),
+          ],
           if (busy) const Center(child: CircularProgressIndicator()),
           if (error != null) Text(error!, style: TextStyle(color: scheme.error)),
           if (!busy && error == null &&
-              expenses.isEmpty && fundPurchases.isEmpty)
+              expenses.isEmpty && fundPurchases.isEmpty &&
+              queuedExpenses.isEmpty)
             Card(child: Padding(padding: const EdgeInsets.all(24),
               child: Text(l.noExpenses, textAlign: TextAlign.center))),
           for (final purchase in fundPurchases) ...[
