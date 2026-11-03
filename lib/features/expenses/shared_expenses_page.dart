@@ -359,7 +359,6 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                   (expense['receipt_date'] as String),
                   style: Theme.of(context).textTheme.bodySmall),
               ],
-              ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               if (expense['created_by'] ==
                   Supabase.instance.client.auth.currentUser?.id) ...[
                 const SizedBox(height: 10),
@@ -370,18 +369,17 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                       editExpense(expense);
                     },
                     icon:const Icon(Icons.edit_outlined),
-                    label:Text(l.editExpense),
-                  ),
+                    label:Text(l.editExpense)),
                   TextButton.icon(
                     onPressed:(){
                       Navigator.pop(context);
                       deleteExpense(expense);
                     },
                     icon:const Icon(Icons.delete_outline),
-                    label:Text(l.deleteExpense),
-                  ),
+                    label:Text(l.deleteExpense)),
                 ]),
               ],
+              ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
@@ -508,7 +506,6 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
               Text(l.expenseReceiptDate + ': ' +
                 (entry['receipt_date'] as String)),
             const SizedBox(height:12),
-            ReceiptAttachmentPreview(fundEntryId:entry['id'] as String),
             if(canEdit) ...[
               const SizedBox(height:18),
               Wrap(spacing:10,runSpacing:8,children:[
@@ -528,6 +525,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                   label:Text(l.deleteExpense)),
               ]),
             ],
+            const SizedBox(height:12),
+            ReceiptAttachmentPreview(fundEntryId:entry['id'] as String),
             if(!canEdit)
               Text(l.fundPurchaseAuthorOnly,
                 style:Theme.of(sheetContext).textTheme.bodySmall),
