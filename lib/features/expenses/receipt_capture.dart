@@ -5,11 +5,13 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'receipt_hints.dart';
 
 class ReceiptDraft {
-  const ReceiptDraft(this.jpeg, this.suggestedTotal);
+  const ReceiptDraft(this.jpeg, this.suggestedTotal, this.hints);
   final Uint8List jpeg;
   final String? suggestedTotal;
+  final ReceiptHints hints;
 }
 
 /// OCR hints are not trusted accounting values; always require user review.
@@ -38,7 +40,7 @@ class ReceiptCapture {
       await recogniser.close();
     }
     return ReceiptDraft(Uint8List.fromList(compressed),
-      extractTotal(text));
+      extractTotal(text), ReceiptHints.parse(text));
   }
 
   static String? extractTotal(String text) {

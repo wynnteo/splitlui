@@ -174,5 +174,11 @@
   "receiptGallery": "从相册选择",
   "receiptRemove": "移除照片",
   "receiptReviewHint": "识别金额仅供参考，保存前请确认金额和货币。",
-  "receiptUploadFailed": "开销已保存，但收据照片上传失败。请勿重复新增同一笔开销。"
+  "receiptUploadFailed": "开销已保存，但收据照片上传失败。请勿重复新增同一笔开销。",
+  "editExpense": "编辑开销",
+  "deleteExpense": "删除开销",
+  "deleteExpenseWarning": "确定删除此开销和成员分摊吗？欠款将重新计算。已有确认还款的群组不可修改开销。",
+  "expenseReceiptCleanupWarning": "开销已删除，但收据照片清理失败，请联系管理员处理。",
+  "expenseReceiptDate": "收据日期",
+  "expenseChooseDate": "选择收据日期"
 }

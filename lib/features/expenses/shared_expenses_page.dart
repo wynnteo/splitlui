@@ -10,7 +10,7 @@ class SharedExpenseApi {
 
   Future<List<Map<String, dynamic>>> list(String groupId) async {
     final rows = await db.from('trip_expenses')
-        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_at')
+        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_by,created_at,updated_at,receipt_date')
         .eq('group_id', groupId).order('created_at', ascending: false);
     return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
@@ -52,6 +52,49 @@ class SharedExpenseApi {
       'p_paid_by': paidBy, 'p_split_between': splitBetween,
     });
     return id.toString();
+  }
+
+  Future<void> saveReceiptDate({
+    required String groupId, String? expenseId,
+    String? fundEntryId, required DateTime? date,
+  }) async {
+    await db.rpc('set_trip_receipt_date', params: {
+      'p_group': groupId, 'p_expense': expenseId,
+      'p_fund_entry': fundEntryId,
+      'p_date': date == null ? null :
+        '${date.year.toString().padLeft(4,'0')}-'
+        '${date.month.toString().padLeft(2,'0')}-'
+        '${date.day.toString().padLeft(2,'0')}',
+    });
+  }
+
+  Future<void> edit({
+    required String groupId, required Map<String,dynamic> original,
+    required String title, required double amount,
+    required String currency, required double rateToSpending,
+    required String paidBy, required List<String> participants,
+    DateTime? receiptDate,
+  }) async {
+    await db.rpc('edit_trip_expense',params: {
+      'p_group': groupId, 'p_expense': original['id'],
+      'p_expected_updated_at': original['updated_at'],
+      'p_title': title.trim(), 'p_amount': amount,
+      'p_currency':currency, 'p_rate_to_spending':rateToSpending,
+      'p_paid_by':paidBy,'p_split_between':participants,
+      'p_date': receiptDate == null ? null :
+          '${receiptDate.year.toString().padLeft(4,'0')}-'
+          '${receiptDate.month.toString().padLeft(2,'0')}-'
+          '${receiptDate.day.toString().padLeft(2,'0')}',
+    });
+  }
+
+  Future<void> delete({
+    required String groupId, required Map<String,dynamic> original,
+  }) async {
+    await db.rpc('delete_trip_expense',params: {
+      'p_group': groupId, 'p_expense': original['id'],
+      'p_expected_updated_at': original['updated_at'],
+    });
   }
 
   Future<List<Map<String, dynamic>>> shares(String expenseId) async {
@@ -120,6 +163,60 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
     if (mounted && added == true) await refresh();
   }
 
+  Future<void> editExpense(Map<String,dynamic> expense) async {
+    final changed = await Navigator.push<bool>(context,MaterialPageRoute(
+      builder: (_) => AddSharedExpensePage(
+        api:api, groupId:widget.groupId, currency:widget.currency,
+        settlementCurrency:widget.settlementCurrency,
+        groupRate:widget.groupRate, members:widget.members,
+        initialExpense:expense,
+      ),
+    ));
+    if (mounted && changed == true) await refresh();
+  }
+
+  Future<void> deleteExpense(Map<String,dynamic> expense) async {
+    final l = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context:context,
+      builder:(dialogContext)=>AlertDialog(
+        title:Text(l.deleteExpense),
+        content:Text(l.deleteExpenseWarning),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(dialogContext,false),
+            child:Text(l.cloudCancel)),
+          FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),
+            child:Text(l.deleteExpense)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      // Read linked object path before deleting its mapping. After the
+      // financial RPC succeeds, remove storage as a best-effort cleanup.
+      String? receiptPath;
+      try {
+        final link = await ReceiptStorage().get(
+          expenseId:expense['id'] as String);
+        receiptPath = link?['object_path'] as String?;
+      } catch (_) {}
+      await api.delete(groupId:widget.groupId,original:expense);
+      if (receiptPath != null) {
+        try {
+          await Supabase.instance.client.storage
+            .from(ReceiptStorage.bucket).remove([receiptPath]);
+        } catch (_) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content:Text(l.expenseReceiptCleanupWarning)));
+        }
+      }
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(e.toString())));
+    }
+  }
+
   Future<void> showShares(Map<String, dynamic> expense) async {
     final l = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
@@ -143,7 +240,35 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                   widget.currency,
                   style: Theme.of(context).textTheme.bodySmall),
               ],
+              if (expense['receipt_date'] != null) ...[
+                const SizedBox(height: 8),
+                Text(l.expenseReceiptDate + ': ' +
+                  (expense['receipt_date'] as String),
+                  style: Theme.of(context).textTheme.bodySmall),
+              ],
               ReceiptAttachmentPreview(expenseId: expense['id'] as String),
+              if (expense['created_by'] ==
+                  Supabase.instance.client.auth.currentUser?.id) ...[
+                const SizedBox(height: 10),
+                Wrap(spacing:8,runSpacing:8,children:[
+                  OutlinedButton.icon(
+                    onPressed:(){
+                      Navigator.pop(context);
+                      editExpense(expense);
+                    },
+                    icon:const Icon(Icons.edit_outlined),
+                    label:Text(l.editExpense),
+                  ),
+                  TextButton.icon(
+                    onPressed:(){
+                      Navigator.pop(context);
+                      deleteExpense(expense);
+                    },
+                    icon:const Icon(Icons.delete_outline),
+                    label:Text(l.deleteExpense),
+                  ),
+                ]),
+              ],
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
@@ -268,7 +393,9 @@ class AddSharedExpensePage extends StatefulWidget {
     super.key, required this.api, required this.groupId,
     required this.currency, required this.members,
     required this.groupRate, required this.settlementCurrency,
+    this.initialExpense,
   });
+  final Map<String,dynamic>? initialExpense;
   final SharedExpenseApi api;
   final String groupId, currency, settlementCurrency;
   final double groupRate;
@@ -292,6 +419,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   late String expenseCurrency;
   bool saving = false;
   bool readingReceipt = false;
+  bool existingSharesLoading = false;
+  DateTime? receiptDate;
+  bool currencyManuallySet = false;
   ReceiptDraft? receipt;
   final receiptStorage = ReceiptStorage();
 
@@ -307,6 +437,18 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         if (amount.text.trim().isEmpty && picked.suggestedTotal != null) {
           amount.text = picked.suggestedTotal!;
         }
+        if (title.text.trim().isEmpty && picked.hints.merchant != null) {
+          title.text = picked.hints.merchant!;
+        }
+        final detected = picked.hints.currency;
+        if (!currencyManuallySet && detected != null &&
+            currencies.contains(detected) && detected != expenseCurrency) {
+          expenseCurrency = detected;
+          exchangeRate.text = detected == widget.currency
+            ? '1' : detected == widget.settlementCurrency
+              ? widget.groupRate.toString() : '';
+        }
+        receiptDate ??= picked.hints.date;
       });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -318,14 +460,55 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
 
   @override void initState() {
     super.initState();
-    expenseCurrency = widget.currency;
-    exchangeRate.text = '1';
+    final original = widget.initialExpense;
+    expenseCurrency = original?['currency'] as String? ?? widget.currency;
+    if (!currencies.contains(expenseCurrency)) expenseCurrency = widget.currency;
+    exchangeRate.text = original?['rate_to_spending']?.toString() ?? '1';
+    if (original != null) {
+      title.text = original['title'] as String? ?? '';
+      amount.text = (original['amount'] as num).toStringAsFixed(2);
+      final dateText = original['receipt_date'] as String?;
+      receiptDate = dateText == null ? null : DateTime.tryParse(dateText);
+      currencyManuallySet = true;
+    }
     final ownId = Supabase.instance.client.auth.currentUser?.id;
     payer = widget.members.any((m) => m['user_id'] == ownId)
       ? ownId : (widget.members.isEmpty ? null :
           widget.members.first['user_id'] as String);
-    selected.addAll(widget.members.map((m) => m['user_id'] as String));
-    loadFund();
+    if (widget.initialExpense == null) {
+      selected.addAll(widget.members.map((m) => m['user_id'] as String));
+      loadFund();
+    } else {
+      payer = widget.initialExpense!['paid_by'] as String;
+      fundLoading = false;
+      existingSharesLoading = true;
+      loadExistingShares();
+    }
+  }
+
+  Future<void> loadExistingShares() async {
+    try {
+      final shares = await widget.api.shares(widget.initialExpense!['id'] as String);
+      if (mounted) setState(() {
+        selected..clear()..addAll(shares.map((x) => x['user_id'] as String));
+        existingSharesLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        // Do not allow saving an incomplete split when the read fails.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  Future<void> chooseReceiptDate() async {
+    final picked = await showDatePicker(
+      context:context,
+      firstDate:DateTime(1990),
+      lastDate:DateTime.now().add(const Duration(days:1)),
+      initialDate:receiptDate ?? DateTime.now());
+    if (picked != null && mounted) setState(() => receiptDate = picked);
   }
 
   Future<void> loadFund() async {
@@ -345,7 +528,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   Future<void> save() async {
-    if (saving || !(form.currentState?.validate() ?? false)) return;
+    if (saving || existingSharesLoading ||
+        !(form.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
     if (!payFromFund && (selected.isEmpty || payer == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -360,6 +544,23 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
     setState(() => saving = true);
     try {
+      if (widget.initialExpense != null) {
+        await widget.api.edit(
+          groupId:widget.groupId,
+          original:widget.initialExpense!,
+          title:title.text,
+          amount:double.parse(amount.text.trim()),
+          currency:expenseCurrency,
+          rateToSpending:expenseCurrency == widget.currency
+            ? 1 : double.parse(exchangeRate.text.trim()),
+          paidBy:payer!,
+          participants:widget.members.map((m)=>m['user_id'] as String)
+            .where(selected.contains).toList(),
+          receiptDate:receiptDate,
+        );
+        if (mounted) Navigator.pop(context,true);
+        return;
+      }
       String createdId;
       if (payFromFund) {
         createdId = await widget.api.addFundPurchase(
@@ -383,6 +584,17 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               .map((m) => m['user_id'] as String)
               .where(selected.contains).toList(),
         );
+      }
+      if (receiptDate != null) {
+        // Metadata is separate for compatibility with existing expense RPCs.
+        // Do not attempt to re-create a committed expense if this fails.
+        try {
+          await widget.api.saveReceiptDate(
+            groupId:widget.groupId, date:receiptDate,
+            expenseId:payFromFund ? null : createdId,
+            fundEntryId:payFromFund ? createdId : null,
+          );
+        } catch (_) { /* Expense remains safely recorded. */ }
       }
       // The expense is already committed. A failed receipt upload must not
       // tempt users to create a duplicate charge by pressing Save again.
@@ -417,6 +629,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     if (value == null) return;
     setState(() {
       expenseCurrency = value;
+      currencyManuallySet = true;
       exchangeRate.text = value == widget.currency
         ? '1'
         : value == widget.settlementCurrency
@@ -440,7 +653,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   @override Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l.addExpense)),
+      appBar: AppBar(title: Text(
+        widget.initialExpense == null ? l.addExpense : l.editExpense)),
       body: SafeArea(top: false, child: Form(key: form,
         child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
@@ -504,8 +718,20 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                 convertedAmount!.toStringAsFixed(2),
                 style: Theme.of(context).textTheme.bodyMedium),
           ],
+          const SizedBox(height: 16),
+          LuiFormLabel(l.expenseReceiptDate),
+          OutlinedButton.icon(
+            onPressed:saving ? null : chooseReceiptDate,
+            icon:const Icon(Icons.calendar_today_outlined),
+            label:Text(receiptDate == null ? l.expenseChooseDate :
+              '${receiptDate!.day.toString().padLeft(2,'0')}/'
+              '${receiptDate!.month.toString().padLeft(2,'0')}/'
+              '${receiptDate!.year}'),
+          ),
           const SizedBox(height: 22),
+          if (widget.initialExpense == null)
           LuiFormLabel(l.receiptAttachment),
+          if (widget.initialExpense == null)
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -543,7 +769,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           )),
           const SizedBox(height: 22),
           LuiFormLabel(l.paidBy),
-          if (!fundLoading && (fundAvailable ?? 0) > 0) ...[
+          if (widget.initialExpense == null &&
+              !fundLoading && (fundAvailable ?? 0) > 0) ...[
             Card(child: SwitchListTile.adaptive(
               title: Text(l.fund),
               subtitle: Text(l.expenseFundAvailable + ': ' +
@@ -602,11 +829,12 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           ],
           const SizedBox(height: 28),
           FilledButton(
-            onPressed: saving ? null : save,
+            onPressed: saving || existingSharesLoading ? null : save,
             child: saving
               ? const SizedBox(height: 20, width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l.saveExpense),
+              : Text(widget.initialExpense == null
+                ? l.saveExpense : l.saveChanges),
           ),
         ]),
       )),
