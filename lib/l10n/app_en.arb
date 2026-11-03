@@ -174,5 +174,12 @@
   "receiptGallery": "Choose photo",
   "receiptRemove": "Remove photo",
   "receiptReviewHint": "Text recognition is only a suggestion. Check the amount and currency before saving.",
-  "receiptUploadFailed": "Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again."
+  "receiptUploadFailed": "Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again.",
+  "offlinePendingHeading": "Waiting to sync",
+  "offlineRetry": "Sync now",
+  "offlinePending": "Saved on this device · Not yet synced",
+  "offlineNeedsReview": "Needs attention · Tap Sync now to retry",
+  "offlineReceiptPending": "Expense synced · Receipt still pending",
+  "offlineSyncError": "Sync failed. Your expense remains saved locally; retry when connected.",
+  "offlineFundOnline": "Common Fund payments require an internet connection."
 }
