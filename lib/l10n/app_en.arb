@@ -95,5 +95,17 @@
   "expenseCurrency": "Expense currency",
   "expenseRateToGroup": "Exchange rate to group currency",
   "groupEquivalent": "Equivalent in group currency",
-  "expenseConversionHint": "The exchange rate is saved with this expense. Original and converted shares are both recorded; conversions are rounded to two decimals."
+  "expenseConversionHint": "The exchange rate is saved with this expense. Original and converted shares are both recorded; conversions are rounded to two decimals.",
+  "settlementPreview": "Who owes whom",
+  "settlementEntryHint": "Review balances and suggested repayments",
+  "settlementExplanation": "See each member's net balance from shared expenses, converted into the group's spending currency.",
+  "settlementRateNote": "Estimated conversion rate",
+  "settlementTotalExpenses": "Total shared expenses",
+  "settlementSuggestedTransfers": "Suggested repayments",
+  "settlementAllEven": "Everyone is settled up so far.",
+  "settlementMemberBalances": "Member balances",
+  "settlementIsOwed": "Should receive",
+  "settlementOwes": "Needs to pay",
+  "settlementBalanced": "Balanced",
+  "settlementLimitations": "Preview only. No payment is made or recorded. Settlement-currency figures are approximate and based on the group's current rate. Common Fund contributions, spending and refunds are excluded; review those separately before closing a trip."
 }

@@ -95,5 +95,17 @@
   "expenseCurrency": "开销货币",
   "expenseRateToGroup": "兑换成群组货币的汇率",
   "groupEquivalent": "换算成群组货币",
-  "expenseConversionHint": "系统会保存这笔开销所用的汇率，同时记录原币与换算金额；换算结果四舍五入至两位小数。"
+  "expenseConversionHint": "系统会保存这笔开销所用的汇率，同时记录原币与换算金额；换算结果四舍五入至两位小数。",
+  "settlementPreview": "谁该还谁钱",
+  "settlementEntryHint": "查看各成员应收应付和建议转账",
+  "settlementExplanation": "根据个人垫付与分摊开销，计算各成员的净余额，并统一换算为群组消费货币。",
+  "settlementRateNote": "参考换算汇率",
+  "settlementTotalExpenses": "共同分摊开销总额",
+  "settlementSuggestedTransfers": "建议还款",
+  "settlementAllEven": "目前大家的个人开销已经结清。",
+  "settlementMemberBalances": "成员余额",
+  "settlementIsOwed": "应收款",
+  "settlementOwes": "应付款",
+  "settlementBalanced": "已平衡",
+  "settlementLimitations": "仅供参考，不会实际转账或记录已付款。结算货币金额按照群组当前汇率估算。共同基金的出资、支出及退款暂不计入个人应收应付，结束旅程前请另行核对。"
 }

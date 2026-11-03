@@ -7,6 +7,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart' show CreateGroup, Group;
 import '../expenses/shared_expenses_page.dart';
 import '../fund/common_fund_page.dart';
+import '../settlement/settlement_page.dart';
 import '../../ui/lui_style.dart';
 
 class SharedGroupApi {
@@ -496,6 +497,23 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
                 groupId: group['id'] as String,
                 groupName: group['name'] as String,
                 currency: group['spending_currency'] as String,
+                members: members,
+              ),
+            )),
+        ),
+        const SizedBox(height: 12),
+        LuiFeatureTile(
+          icon: Icons.compare_arrows_rounded,
+          title: l.settlementPreview,
+          subtitle: l.settlementEntryHint,
+          onTap: busy || error != null ? null : () =>
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => SettlementPage(
+                groupId: group['id'] as String,
+                groupName: group['name'] as String,
+                spendingCurrency: group['spending_currency'] as String,
+                settlementCurrency: group['settlement_currency'] as String,
+                exchangeRate: (group['exchange_rate'] as num).toDouble(),
                 members: members,
               ),
             )),
