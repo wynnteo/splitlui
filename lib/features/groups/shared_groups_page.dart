@@ -258,10 +258,11 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
             subtitle: (g['spending_currency'] as String) + ' / ' +
               (g['settlement_currency'] as String),
             onTap: () async {
-              final changed = await Navigator.push<bool>(context,
+              await Navigator.push<bool>(context,
                 MaterialPageRoute(builder: (_) =>
                   SharedGroupDetail(api: api, group: g)));
-              if (mounted && changed == true) await refresh();
+              // Also reload after edits when Android's Back button is used.
+              if (mounted) await refresh();
             },
           ),
           const SizedBox(height: 10),
