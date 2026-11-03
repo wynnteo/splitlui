@@ -117,8 +117,10 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
 
   Future<String?> askText(String title, String hint, {String initial = ''}) {
     final l = AppLocalizations.of(context)!;
-    return showDialog<String>(
-      context: context,
+    return showModalBottomSheet<String>(
+      context: context, isScrollControlled: true,
+      useSafeArea: true, showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => _SharedGroupTextDialog(
         title: title,
         hint: hint,
@@ -228,7 +230,8 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         IconButton(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh),
           tooltip: l.cloudRefresh),
       ]),
-      body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+      body: SafeArea(top: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
         Text(l.groups,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700, letterSpacing: -0.7)),
@@ -309,7 +312,7 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         const SizedBox(height: 20),
         Text(l.cloudIdentityWarning,
           style: Theme.of(context).textTheme.bodySmall),
-      ]),
+      ])),
     );
   }
 }
@@ -416,8 +419,10 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
 
   Future<void> deleteGroup() async {
     final l = AppLocalizations.of(context)!;
-    final confirmedName = await showDialog<String>(
-      context: context,
+    final confirmedName = await showModalBottomSheet<String>(
+      context: context, isScrollControlled: true,
+      useSafeArea: true, showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => _SharedGroupTextDialog(
         title: l.deleteGroup,
         hint: l.typeGroupName + ': ' + (group['name'] as String),
@@ -447,7 +452,8 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
       appBar: AppBar(title: Text(group['name'] as String),
         actions: [IconButton(onPressed: refresh, icon: const Icon(Icons.refresh),
           tooltip: l.cloudRefresh)]),
-      body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+      body: SafeArea(top: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
         Text(group['name'] as String,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700, letterSpacing: -0.7)),
@@ -568,14 +574,13 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           ),
           const SizedBox(height: 10),
         ],
-      ]),
+      ])),
     );
   }
 }
 
 
-/// Owns the input controller for the entire dialog route lifecycle.
-/// Disposing after showDialog returns is too early during route animation.
+/// A keyboard-aware, mobile-native bottom sheet for short text entry.
 class _SharedGroupTextDialog extends StatefulWidget {
   const _SharedGroupTextDialog({
     required this.title, required this.hint, required this.initial,
@@ -584,52 +589,68 @@ class _SharedGroupTextDialog extends StatefulWidget {
   });
   final String title, hint, initial, cancelLabel, confirmLabel;
   final int maxLength;
-
-  @override
-  State<_SharedGroupTextDialog> createState() => _SharedGroupTextDialogState();
+  @override State<_SharedGroupTextDialog> createState() => _SharedGroupTextDialogState();
 }
 
 class _SharedGroupTextDialogState extends State<_SharedGroupTextDialog> {
   late final TextEditingController controller;
 
-  @override
-  void initState() {
+  @override void initState() {
     super.initState();
     controller = TextEditingController(text: widget.initial);
   }
 
-  @override
-  void dispose() {
+  @override void dispose() {
     controller.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title),
-    content: TextField(
-      controller: controller,
-      maxLength: widget.maxLength,
-      autofocus: true,
-      textInputAction: TextInputAction.done,
-      decoration: InputDecoration(hintText: widget.hint),
-      onSubmitted: (value) {
-        final trimmed = value.trim();
-        if (trimmed.isNotEmpty) Navigator.pop(context, trimmed);
-      },
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: Text(widget.cancelLabel),
+  void submit() {
+    final text = controller.text.trim();
+    if (text.isNotEmpty) Navigator.pop(context, text);
+  }
+
+  @override Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        child: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(widget.title, style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(widget.hint, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 20),
+            TextField(
+              controller: controller,
+              maxLength: widget.maxLength,
+              autofocus: true,
+              minLines: 1,
+              maxLines: widget.maxLength > 100 ? 4 : 1,
+              textInputAction: widget.maxLength > 100
+                ? TextInputAction.newline : TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                counterStyle: theme.textTheme.bodySmall,
+              ),
+              onSubmitted: (_) {
+                if (widget.maxLength <= 100) submit();
+              },
+            ),
+            const SizedBox(height: 10),
+            FilledButton(
+              onPressed: submit,
+              child: Text(widget.confirmLabel),
+            ),
+            const SizedBox(height: 6),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(widget.cancelLabel),
+            ),
+          ]),
       ),
-      FilledButton(
-        onPressed: () {
-          final value = controller.text.trim();
-          if (value.isNotEmpty) Navigator.pop(context, value);
-        },
-        child: Text(widget.confirmLabel),
-      ),
-    ],
-  );
+    );
+  }
 }
