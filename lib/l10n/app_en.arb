@@ -145,5 +145,6 @@
   "settlementDisplayCurrency": "Show repayments in",
   "settlementOriginalBalance": "Original balance",
   "settlementEstimateDisclaimer": "Converted amounts are estimates using the group's agreed exchange rate; confirm the amount and currency before paying.",
-  "settlementLedgerNote": "Repayment records are still tracked in the group's spending currency"
+  "settlementLedgerNote": "Repayment records are still tracked in the group's spending currency",
+  "settlementConvertedEstimate": "Converted estimate"
 }
