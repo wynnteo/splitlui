@@ -156,8 +156,8 @@ class _CommonFundPageState extends State<CommonFundPage> {
             tooltip: l.cloudRefresh),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      body: SafeArea(top: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
           Text(widget.groupName,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -239,7 +239,7 @@ class _CommonFundPageState extends State<CommonFundPage> {
             const SizedBox(height: 10),
           ],
         ],
-      ),
+      )),
     );
   }
 }
@@ -306,10 +306,10 @@ class _FundEntryFormState extends State<FundEntryForm> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.contribution
         ? l.fundAddContribution : l.fundPayExpense)),
-      body: Form(
+      body: SafeArea(top: false, child: Form(
         key: form,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           children: [
             LuiFormLabel(widget.contribution
               ? l.fundContributionNote : l.expenseTitle),
@@ -365,7 +365,7 @@ class _FundEntryFormState extends State<FundEntryForm> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }
