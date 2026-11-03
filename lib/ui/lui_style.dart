@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 
 /// SplitLui's visual language: quiet surfaces, crisp type and a restrained
-/// teal accent. Keep this independent of persistence and group logic.
+/// sky-blue accent. Keep this independent of persistence and group logic.
 abstract final class LuiStyle {
-  static const ink = Color(0xFF1E292D);
-  static const teal = Color(0xFF187F79);
-  static const canvas = Color(0xFFF6F8F7);
-  static const line = Color(0xFFE4EAE8);
+  static const ink = Color(0xFF172A41);
+  static const blue = Color(0xFF287FC1);
+  static const canvas = Color(0xFFF5F9FE);
+  static const line = Color(0xFFE1EBF5);
 
   static ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: teal,
+      seedColor: blue,
       brightness: brightness,
-      primary: dark ? const Color(0xFF7DD2C5) : teal,
-      surface: dark ? const Color(0xFF1B2427) : Colors.white,
+      primary: dark ? const Color(0xFF91CEFF) : blue,
+      surface: dark ? const Color(0xFF1A293B) : Colors.white,
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF11191C) : canvas,
+      scaffoldBackgroundColor: dark ? const Color(0xFF101B2A) : canvas,
       appBarTheme: AppBarTheme(
         backgroundColor: dark ? const Color(0xFF11191C) : canvas,
         foregroundColor: colorScheme.onSurface,
@@ -39,7 +39,7 @@ abstract final class LuiStyle {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: dark ? const Color(0xFF354246) : line),
+          side: BorderSide(color: dark ? const Color(0xFF30445E) : line),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -47,9 +47,9 @@ abstract final class LuiStyle {
         fillColor: colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: dark ? const Color(0xFF354246) : line)),
+          borderSide: BorderSide(color: dark ? const Color(0xFF30445E) : line)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: dark ? const Color(0xFF354246) : line)),
+          borderSide: BorderSide(color: dark ? const Color(0xFF30445E) : line)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: colorScheme.primary, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
@@ -62,8 +62,8 @@ abstract final class LuiStyle {
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        side: BorderSide(color: dark ? const Color(0xFF354246) : line))),
-      dividerTheme: DividerThemeData(color: dark ? const Color(0xFF354246) : line),
+        side: BorderSide(color: dark ? const Color(0xFF30445E) : line))),
+      dividerTheme: DividerThemeData(color: dark ? const Color(0xFF30445E) : line),
     );
   }
 }
