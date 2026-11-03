@@ -107,5 +107,13 @@
   "settlementIsOwed": "Should receive",
   "settlementOwes": "Needs to pay",
   "settlementBalanced": "Balanced",
-  "settlementLimitations": "Preview only. No payment is made or recorded. Settlement-currency figures are approximate and based on the group's current rate. Common Fund contributions, spending and refunds are excluded; review those separately before closing a trip."
+  "settlementLimitations": "Preview only. No payment is made or recorded. Settlement-currency figures are approximate and based on the group's current rate. Common Fund contributions, spending and refunds are excluded; review those separately before closing a trip.",
+  "repaymentConfirmReceived": "Confirm money received",
+  "repaymentConfirmWarning": "Only confirm after the money is actually received. This does not initiate PayNow or a bank transfer. You can record a partial payment.",
+  "repaymentNote": "Payment note (optional)",
+  "repaymentNoteHint": "e.g. PayNow received",
+  "repaymentHistory": "Confirmed repayments",
+  "repaymentNoRecords": "No repayments have been confirmed yet.",
+  "repaymentReceivedRecorded": "Received and recorded",
+  "repaymentLimitations": "Only the recipient can confirm money received. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Mistaken confirmations cannot yet be reversed; check carefully."
 }
