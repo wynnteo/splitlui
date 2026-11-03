@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 
 /// SplitLui's visual language: quiet surfaces, crisp type and a restrained
-/// sky-blue accent. Keep this independent of persistence and group logic.
+/// rich teal accent. Keep this independent of persistence and group logic.
 abstract final class LuiStyle {
   static const ink = Color(0xFF172A41);
-  static const blue = Color(0xFF287FC1);
-  static const canvas = Color(0xFFF5F9FE);
-  static const line = Color(0xFFE1EBF5);
+  static const blue = Color(0xFF138C7C); // Legacy name; brand teal, not Bootstrap blue.
+  static const teal = blue;
+  static const canvas = Color(0xFFF4FAF8);
+  static const line = Color(0xFFDDECE6);
 
   static ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colorScheme = ColorScheme.fromSeed(
       seedColor: blue,
       brightness: brightness,
-      primary: dark ? const Color(0xFF91CEFF) : blue,
-      surface: dark ? const Color(0xFF1A293B) : Colors.white,
+      primary: dark ? const Color(0xFF68DDC5) : teal,
+      surface: dark ? const Color(0xFF172C2A) : Colors.white,
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF101B2A) : canvas,
+      scaffoldBackgroundColor: dark ? const Color(0xFF101D1C) : canvas,
       appBarTheme: AppBarTheme(
-        backgroundColor: dark ? const Color(0xFF11191C) : canvas,
+        backgroundColor: dark ? const Color(0xFF101D1C) : canvas,
         foregroundColor: colorScheme.onSurface,
         centerTitle: false,
         elevation: 0,
@@ -39,7 +40,7 @@ abstract final class LuiStyle {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: dark ? const Color(0xFF30445E) : line),
+          side: BorderSide(color: dark ? const Color(0xFF31524B) : line),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -110,7 +111,7 @@ class LuiFeatureTile extends StatelessWidget {
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.10),
+              color: scheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(13)),
             child: Icon(icon, color: scheme.primary, size: 22)),
           const SizedBox(width: 14),
