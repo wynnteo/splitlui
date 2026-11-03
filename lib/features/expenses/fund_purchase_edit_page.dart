@@ -71,11 +71,11 @@ class _FundPurchaseEditPageState extends State<FundPurchaseEditPage> {
         children:[
           Text(l.fundPaidFromPool,style:Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height:20),
-          LuiFormLabel(l.expenseName),
+          LuiFormLabel(l.expenseTitle),
           TextFormField(controller:title,maxLength:120,
             validator:(v)=>v==null||v.trim().isEmpty ? l.required : null),
           const SizedBox(height:12),
-          LuiFormLabel(l.amount),
+          LuiFormLabel(l.expenseAmount),
           TextFormField(controller:amount,
             keyboardType:const TextInputType.numberWithOptions(decimal:true),
             onChanged:(_)=>setState((){}),
@@ -85,7 +85,7 @@ class _FundPurchaseEditPageState extends State<FundPurchaseEditPage> {
                 !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(t) ? l.invalid : null;
             }),
           const SizedBox(height:12),
-          LuiFormLabel(l.currency),
+          LuiFormLabel(l.expenseCurrency),
           DropdownButtonFormField<String>(value:currency,isExpanded:true,
             items:codes.map((c)=>DropdownMenuItem(value:c,child:Text(c))).toList(),
             onChanged:saving?null:(v) {
