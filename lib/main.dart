@@ -316,7 +316,7 @@ class _CreateGroupState extends State<CreateGroup> {
             isExpanded: true,
             decoration: const InputDecoration(),
             items: currencies.map((c) => DropdownMenuItem(
-              value: c, child: Text(c == 'THB' ? l.thaiBaht : c))).toList(),
+              value: c, child: Text(c))).toList(),
             onChanged: widget.initial == null ? (v) {
               if (v != null) setState(() {
                 spending = v;
@@ -331,7 +331,7 @@ class _CreateGroupState extends State<CreateGroup> {
             isExpanded: true,
             decoration: const InputDecoration(),
             items: currencies.map((c) => DropdownMenuItem(
-              value: c, child: Text(c == 'THB' ? l.thaiBaht : c))).toList(),
+              value: c, child: Text(c))).toList(),
             onChanged: widget.initial == null ? (v) {
               if (v != null) setState(() {
                 settlement = v;
