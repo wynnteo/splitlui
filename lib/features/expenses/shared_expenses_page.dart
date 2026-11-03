@@ -306,6 +306,12 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         SnackBar(content: Text(l.selectParticipants)));
       return;
     }
+    if (payFromFund &&
+        (convertedAmount == null || convertedAmount! > (fundAvailable ?? 0))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.expenseFundInsufficient)));
+      return;
+    }
     setState(() => saving = true);
     try {
       if (payFromFund) {
@@ -385,6 +391,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: saving ? null : chooseCurrency,
           ),
+          const SizedBox(height: 18),
           LuiFormLabel(l.expenseAmount),
           TextFormField(
             controller: amount,
@@ -402,7 +409,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           ),
           const SizedBox(height: 18),
           if (expenseCurrency != widget.currency) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 6),
             LuiFormLabel(l.expenseRateToGroup),
             TextFormField(
               controller: exchangeRate,
@@ -476,14 +483,12 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           const SizedBox(height: 12),
           Text(l.equalSplitOnly,
             style: Theme.of(context).textTheme.bodySmall),
-          ] ,
+          ],
           if (payFromFund) ...[
             const SizedBox(height: 12),
             Text(l.expenseFundNoSplit,
               style: Theme.of(context).textTheme.bodySmall),
           ],
-          if (false) Text(l.equalSplitOnly,
-            style: Theme.of(context).textTheme.bodySmall),
           if (expenseCurrency != widget.currency) ...[
             const SizedBox(height: 8),
             Text(l.expenseConversionHint,
