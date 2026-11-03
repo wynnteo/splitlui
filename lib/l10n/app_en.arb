@@ -174,5 +174,11 @@
   "receiptGallery": "Choose photo",
   "receiptRemove": "Remove photo",
   "receiptReviewHint": "Text recognition is only a suggestion. Check the amount and currency before saving.",
-  "receiptUploadFailed": "Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again."
+  "receiptUploadFailed": "Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again.",
+  "editExpense": "Edit expense",
+  "deleteExpense": "Delete expense",
+  "deleteExpenseWarning": "Delete this expense and its member shares? Outstanding balances will be recalculated. Expenses cannot be changed after confirmed repayments.",
+  "expenseReceiptCleanupWarning": "Expense deleted, but its stored receipt photo could not be removed. Please contact support for cleanup.",
+  "expenseReceiptDate": "Receipt date",
+  "expenseChooseDate": "Choose receipt date"
 }
