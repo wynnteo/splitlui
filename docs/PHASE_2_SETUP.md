@@ -6,21 +6,17 @@ Group membership is cloud-backed. Phase 1 local groups remain separate.
 1. Create a Supabase project.
 2. Enable Authentication > Providers > Anonymous Sign-Ins for development.
 3. Execute supabase/migrations/20261103_000001_trip_groups.sql in the Supabase SQL Editor.
-4. Copy your Project URL and publishable/anon key. Never use the service_role key in Flutter.
+4. The project URL and **publishable (public client) key** are already committed in `config/supabase.json` for this app. Never use a secret/service_role key in Flutter.
 
 ## Run
-1. Copy config/supabase.example.json to config/supabase.local.json.
-2. Replace the two placeholder values with your Supabase Project URL and publishable key.
-3. The local file is ignored by Git and must not be committed. Do not use a secret or service_role key.
-
-Run these commands:
+The configuration is **already included** in `config/supabase.json`. No file copying or editing required.
 
     flutter pub get
     flutter gen-l10n
     flutter analyze
-    flutter run --dart-define-from-file=config/supabase.local.json
+    flutter run --dart-define-from-file=config/supabase.json
 
-If you prefer, you can still use individual --dart-define arguments.
+The publishable key is intended for use in client applications and is not a secret. Authorization is enforced with Supabase RLS. Do not add a service_role or secret key to this checked-in file.
 
 Without Supabase settings, cloud groups stay disabled and local Phase 1 groups still work.
 
