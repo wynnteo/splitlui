@@ -117,7 +117,7 @@ class LuiFeatureTile extends StatelessWidget {
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w650,
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600,
                 fontSize: 16)),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
