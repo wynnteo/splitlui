@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart' show CreateGroup, Group;
 import '../expenses/shared_expenses_page.dart';
+import '../fund/common_fund_page.dart';
 import '../../ui/lui_style.dart';
 
 class SharedGroupApi {
@@ -301,6 +302,21 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           onTap: busy || error != null ? null : () =>
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => SharedExpensesPage(
+                groupId: widget.group['id'] as String,
+                groupName: widget.group['name'] as String,
+                currency: widget.group['spending_currency'] as String,
+                members: members,
+              ),
+            )),
+        ),
+        const SizedBox(height: 12),
+        LuiFeatureTile(
+          icon: Icons.account_balance_wallet_outlined,
+          title: l.fund,
+          subtitle: l.fundEntryHint,
+          onTap: busy || error != null ? null : () =>
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => CommonFundPage(
                 groupId: widget.group['id'] as String,
                 groupName: widget.group['name'] as String,
                 currency: widget.group['spending_currency'] as String,
