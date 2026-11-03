@@ -406,13 +406,26 @@ class _SettlementPageState extends State<SettlementPage> {
                         fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
                     for (final item in expenseSummary!.totals) ...[
-                      Row(children: [
-                        Expanded(child: Text(
-                          item.currency + ' · ' + l.expenseOriginalTotal)),
-                        Text(item.currency + ' ' +
-                          (item.cents / 100).toStringAsFixed(2),
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ]),
+                      Row(crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: Text(item.currency + ' · ' +
+                            l.expenseOriginalTotal)),
+                          const SizedBox(width: 10),
+                          Column(crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(item.currency + ' ' +
+                                (item.cents / 100).toStringAsFixed(2),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600)),
+                              if (item.currency !=
+                                  expenseSummary!.totalSettlementCurrency)
+                                Text('≈ ' +
+                                  expenseSummary!.totalSettlementCurrency +
+                                  ' ' + (item.settlementCents / 100)
+                                    .toStringAsFixed(2),
+                                  style: Theme.of(context).textTheme.bodySmall),
+                            ]),
+                        ]),
                       const SizedBox(height: 10),
                     ],
                     if (expenseSummary!.totals.isEmpty)
