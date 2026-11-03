@@ -453,9 +453,9 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l.repaymentConfirmReceived)),
-      body: Form(key: formKey,
+      body: SafeArea(top: false, child: Form(key: formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           children: [
             Text(widget.senderName + ' → ' + widget.receiverName,
               style: Theme.of(context).textTheme.titleLarge),
@@ -491,7 +491,7 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }
