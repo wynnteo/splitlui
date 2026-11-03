@@ -21,6 +21,7 @@ void main() {
     );
     expect(summary.totals.map((x) => x.currency), ['SGD', 'THB']);
     expect(summary.totals.map((x) => x.cents), [200000, 600000]);
+    expect(summary.totals.map((x) => x.settlementCents), [200000, 24000]);
     expect(summary.totalSettlementCurrency, 'SGD');
     expect(summary.totalSettlementCents, 224000);
     expect(summary.usesOtherCurrencyRates, false);
