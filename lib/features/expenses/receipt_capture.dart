@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
@@ -119,4 +120,65 @@ class ReceiptStorage {
       rethrow;
     }
   }
+}
+
+
+/// A signed link is requested only when a member opens an expense detail.
+/// The underlying bucket is private and never uses a public asset URL.
+class ReceiptAttachmentPreview extends StatefulWidget {
+  const ReceiptAttachmentPreview({super.key, this.expenseId, this.fundEntryId});
+  final String? expenseId;
+  final String? fundEntryId;
+
+  @override
+  State<ReceiptAttachmentPreview> createState() =>
+      _ReceiptAttachmentPreviewState();
+}
+
+class _ReceiptAttachmentPreviewState extends State<ReceiptAttachmentPreview> {
+  late final Future<String?> url;
+
+  Future<String?> load() async {
+    final storage = ReceiptStorage();
+    final receipt = await storage.get(
+      expenseId: widget.expenseId,
+      fundEntryId: widget.fundEntryId);
+    if (receipt == null) return null;
+    return storage.signedUrl(receipt['object_path'] as String);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    url = load();
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<String?>(
+    future: url,
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Padding(
+            padding: EdgeInsets.all(10),
+            child: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasError) {
+          return Text(snapshot.error.toString(),
+            style: TextStyle(color: Theme.of(context).colorScheme.error));
+        }
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(snapshot.data!,
+            height: 220, fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.broken_image_outlined, size: 36)),
+        ),
+      );
+    },
+  );
 }
