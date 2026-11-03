@@ -61,5 +61,22 @@
   "selectParticipants": "Select at least one person to split with.",
   "saveExpense": "Save expense",
   "noExpenses": "No expenses yet. Add the first expense to get started.",
-  "expenseEntryHint": "Add and review shared expenses"
+  "expenseEntryHint": "Add and review shared expenses",
+  "fundEntryHint": "Manage pooled contributions and spending",
+  "fundBalance": "Available fund balance",
+  "fundLowBalance": "Fund is running low. Consider topping up.",
+  "fundThreshold": "Low-balance alert",
+  "fundThresholdHint": "Set an alert threshold in the spending currency. Enter 0 to turn off the warning.",
+  "fundManualNotice": "Manual ledger only — record contributions after receiving the money. No bank transfers happen in this app.",
+  "fundAddContribution": "Record contribution",
+  "fundPayExpense": "Pay from common fund",
+  "fundHistory": "Fund activity",
+  "fundNoEntries": "No fund transactions yet.",
+  "fundContributedBy": "Contributed by",
+  "fundPaidFromPool": "Paid using group funds",
+  "fundContributionNote": "Contribution note",
+  "fundContributionHint": "e.g. Cash collected",
+  "fundContributor": "Contributed by",
+  "fundRecordActual": "Only record money actually received, not an amount someone promised to pay.",
+  "fundNoDoubleSplit": "This payment uses common funds and will not create an individual split expense."
 }

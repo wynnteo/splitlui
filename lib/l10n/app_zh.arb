@@ -61,5 +61,22 @@
   "selectParticipants": "请至少选择一位分摊成员。",
   "saveExpense": "保存开销",
   "noExpenses": "目前还没有开销。添加第一笔开销吧。",
-  "expenseEntryHint": "添加和查看共同开销"
+  "expenseEntryHint": "添加和查看共同开销",
+  "fundEntryHint": "记录共同基金的出资及支出",
+  "fundBalance": "共同基金余额",
+  "fundLowBalance": "共同基金余额偏低，可以考虑补款。",
+  "fundThreshold": "低余额提醒",
+  "fundThresholdHint": "以消费货币设置提醒金额；输入 0 即关闭提醒。",
+  "fundManualNotice": "目前仅提供手动记录。收到款项后才记录出资，App 不会自动转账。",
+  "fundAddContribution": "记录成员出资",
+  "fundPayExpense": "使用共同基金付款",
+  "fundHistory": "共同基金记录",
+  "fundNoEntries": "暂时没有共同基金交易记录。",
+  "fundContributedBy": "出资成员",
+  "fundPaidFromPool": "由共同基金支付",
+  "fundContributionNote": "出资备注",
+  "fundContributionHint": "例如：已收现金",
+  "fundContributor": "出资人",
+  "fundRecordActual": "请在实际收到款项后才记录，不要将口头承诺当作已出资。",
+  "fundNoDoubleSplit": "此费用从共同基金扣除，不会再分摊到个人账目。"
 }
