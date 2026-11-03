@@ -78,5 +78,18 @@
   "fundContributionHint": "e.g. Cash collected",
   "fundContributor": "Contributed by",
   "fundRecordActual": "Only record money actually received, not an amount someone promised to pay.",
-  "fundNoDoubleSplit": "This payment uses common funds and will not create an individual split expense."
+  "fundNoDoubleSplit": "This payment uses common funds and will not create an individual split expense.",
+  "fundRefundMember": "Refund a member",
+  "fundRefundedTo": "Refunded to",
+  "fundRefundRecipient": "Recipient",
+  "fundRefundNotice": "Only record a refund after you have actually returned money. Choose the amount agreed by your group; SplitLui does not calculate fair refund shares yet.",
+  "fundRefundNote": "Refund note",
+  "fundRefundNoteHint": "e.g. Unused trip cash returned",
+  "fundRecordRefund": "Record refund",
+  "fundReverseEntry": "Correct this entry",
+  "fundReverseWarning": "This will add a separate reversal to the audit history and adjust the balance. The original record stays visible. Reversals cannot be undone.",
+  "fundCorrectionReason": "Reason for correction",
+  "fundConfirmCorrection": "Confirm correction",
+  "fundCorrection": "Correction / reversal",
+  "fundReversedLabel": "Reversed"
 }
