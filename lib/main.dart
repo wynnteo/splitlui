@@ -2,10 +2,19 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'features/groups/shared_groups_page.dart';
 import 'l10n/generated/app_localizations.dart';
 
-void main() {
+const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+const cloudEnabled = supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (cloudEnabled) {
+    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  }
   runApp(const SplitLui());
 }
 
@@ -168,6 +177,25 @@ class _SplitLuiState extends State<SplitLui> {
               Text(t('subtitle'), style: const TextStyle(color: Colors.white)),
             ]),
           ),
+          const SizedBox(height: 18),
+          Card(child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(AppLocalizations.of(context)!.cloudTitle,
+                style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(AppLocalizations.of(context)!.cloudSubtitle),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: cloudEnabled ? () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SharedGroupsPage())) : null,
+                icon: const Icon(Icons.group_add_outlined),
+                label: Text(AppLocalizations.of(context)!.cloudGroups),
+              ),
+              if (!cloudEnabled) Text(AppLocalizations.of(context)!.cloudNotConfigured,
+                style: Theme.of(context).textTheme.bodySmall),
+            ]),
+          )),
           const SizedBox(height: 24),
           Row(children: [
             Expanded(child: Text(t('groups'),
