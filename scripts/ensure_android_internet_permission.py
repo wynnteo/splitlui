@@ -24,15 +24,14 @@ if not MANIFEST.is_file():
 
 source = MANIFEST.read_text(encoding="utf-8")
 pattern = re.compile(
-    r"<uses-permission\\b[^>]*\\bandroid:name\\s*=\\s*"
-    r"['\\\"]android\\.permission\\.INTERNET['\\\"]",
+    r"""<uses-permission\b[^>]*\bandroid:name\s*=\s*['"]android\.permission\.INTERNET['"]""",
     re.DOTALL,
 )
 if pattern.search(source):
     print(f"Already configured: {MANIFEST.relative_to(ROOT)}")
     sys.exit(0)
 
-opening_tag = re.search(r"<manifest\\b[^>]*>", source, re.DOTALL)
+opening_tag = re.search(r"<manifest\b[^>]*>", source, re.DOTALL)
 if opening_tag is None:
     print("AndroidManifest.xml has no <manifest> opening tag.", file=sys.stderr)
     sys.exit(1)
