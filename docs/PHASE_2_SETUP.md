@@ -9,10 +9,18 @@ Group membership is cloud-backed. Phase 1 local groups remain separate.
 4. Copy your Project URL and publishable/anon key. Never use the service_role key in Flutter.
 
 ## Run
-flutter pub get
-flutter gen-l10n
-flutter analyze
-flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_KEY
+1. Copy config/supabase.example.json to config/supabase.local.json.
+2. Replace the two placeholder values with your Supabase Project URL and publishable key.
+3. The local file is ignored by Git and must not be committed. Do not use a secret or service_role key.
+
+Run these commands:
+
+    flutter pub get
+    flutter gen-l10n
+    flutter analyze
+    flutter run --dart-define-from-file=config/supabase.local.json
+
+If you prefer, you can still use individual --dart-define arguments.
 
 Without Supabase settings, cloud groups stay disabled and local Phase 1 groups still work.
 
