@@ -16,9 +16,14 @@ void main() {
     expect(await RepaymentPreferences.getDefault(), 'SGD');
   });
 
+  test('Persists THB as a travel repayment default', () async {
+    await RepaymentPreferences.setDefault('THB');
+    expect(await RepaymentPreferences.getDefault(), 'THB');
+  });
+
   test('Rejects an unsupported default', () async {
     await expectLater(
-      RepaymentPreferences.setDefault('THB'), throwsArgumentError);
+      RepaymentPreferences.setDefault('XYZ'), throwsArgumentError);
   });
 
   test('Falls back to SGD for an invalid saved preference', () async {
