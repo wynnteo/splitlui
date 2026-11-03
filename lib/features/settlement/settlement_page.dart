@@ -24,6 +24,7 @@ class SettlementPage extends StatefulWidget {
 
 class _SettlementPageState extends State<SettlementPage> {
   bool busy = true;
+  bool showSettlementCurrency = true;
   String? error;
   SettlementResult? result;
   List<Map<String, dynamic>> repayments = [];
@@ -116,6 +117,28 @@ class _SettlementPageState extends State<SettlementPage> {
     if (mounted && updated == true) await refresh();
   }
 
+  bool get hasAlternateCurrency =>
+    widget.spendingCurrency != widget.settlementCurrency &&
+    widget.exchangeRate.isFinite && widget.exchangeRate > 0;
+
+  String get shownCurrency =>
+    hasAlternateCurrency && showSettlementCurrency
+      ? widget.settlementCurrency : widget.spendingCurrency;
+
+  String shownAmount(int cents) {
+    if (hasAlternateCurrency && showSettlementCurrency) {
+      return widget.settlementCurrency + ' ' +
+        (cents / 100 / widget.exchangeRate).toStringAsFixed(2);
+    }
+    return amount(cents);
+  }
+
+  String? secondaryAmount(int cents) {
+    if (!hasAlternateCurrency) return null;
+    if (showSettlementCurrency) return amount(cents);
+    return settlementEstimate(cents);
+  }
+
   String repaymentMessage(SuggestedTransfer transfer, AppLocalizations l) {
     final recipient = nameOf(transfer.toUserId);
     final sender = nameOf(transfer.fromUserId);
@@ -124,12 +147,15 @@ class _SettlementPageState extends State<SettlementPage> {
       ..writeln('SplitLui · ' + widget.groupName)
       ..writeln(l.payNowRequestTo + ': ' + sender)
       ..writeln(l.payNowRecipient + ': ' + recipient)
-      ..writeln(l.payNowAmountDue + ': ' + amount(transfer.cents));
-    if (widget.spendingCurrency != 'SGD' &&
-        widget.settlementCurrency == 'SGD' &&
-        widget.exchangeRate.isFinite && widget.exchangeRate > 0) {
-      content.writeln(l.payNowEstimatedSgd + ': ≈ SGD ' +
-          (transfer.cents / 100 / widget.exchangeRate).toStringAsFixed(2));
+      ..writeln(l.payNowAmountDue + ': ' + shownAmount(transfer.cents));
+    if (hasAlternateCurrency) {
+      content.writeln(l.settlementOriginalBalance + ': ' + amount(transfer.cents));
+      if (showSettlementCurrency) {
+        content.writeln(l.settlementEstimateDisclaimer);
+      } else {
+        content.writeln(l.settlementEstimateDisclaimer + ': ' +
+            settlementEstimate(transfer.cents)!);
+      }
     }
     if (phone != null && phone.isNotEmpty) {
       content
@@ -138,7 +164,8 @@ class _SettlementPageState extends State<SettlementPage> {
     } else {
       content.writeln(l.payNowNoDetailsShared);
     }
-    if (widget.spendingCurrency != 'SGD') {
+    if (widget.spendingCurrency != 'SGD' ||
+        widget.settlementCurrency != 'SGD') {
       content.writeln(l.payNowAgreeSgd);
     }
     content.writeln(l.payNowNotPayment);
@@ -190,8 +217,8 @@ class _SettlementPageState extends State<SettlementPage> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      body: SafeArea(top: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
           Text(widget.groupName,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -206,7 +233,29 @@ class _SettlementPageState extends State<SettlementPage> {
             label: Text(l.payNowDetails),
           ),
           const SizedBox(height: 18),
-          if (widget.settlementCurrency != widget.spendingCurrency)
+          if (hasAlternateCurrency) ...[
+            Text(l.settlementDisplayCurrency,
+              style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            SizedBox(width: double.infinity,
+              child: SegmentedButton<bool>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: false,
+                    label: Text(widget.spendingCurrency)),
+                  ButtonSegment(value: true,
+                    label: Text(widget.settlementCurrency)),
+                ],
+                selected: {showSettlementCurrency},
+                onSelectionChanged: (selection) => setState(
+                  () => showSettlementCurrency = selection.first),
+              )),
+            const SizedBox(height: 12),
+            Text(l.settlementEstimateDisclaimer,
+              style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+          ],
+          if (hasAlternateCurrency)
             Card(child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(l.settlementRateNote + ': 1 ' +
@@ -257,11 +306,11 @@ class _SettlementPageState extends State<SettlementPage> {
                         style: const TextStyle(fontWeight: FontWeight.w600))),
                     ]),
                     const SizedBox(height: 12),
-                    Text(amount(transfer.cents),
+                    Text(shownAmount(transfer.cents),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700)),
-                    if (settlementEstimate(transfer.cents) != null)
-                      Text(settlementEstimate(transfer.cents)!,
+                    if (secondaryAmount(transfer.cents) != null)
+                      Text(secondaryAmount(transfer.cents)!,
                         style: Theme.of(context).textTheme.bodySmall),
                     if (Supabase.instance.client.auth.currentUser?.id ==
                         transfer.toUserId) ...[
@@ -328,7 +377,7 @@ class _SettlementPageState extends State<SettlementPage> {
                   : balance.cents < 0
                     ? l.settlementOwes
                     : l.settlementBalanced,
-                trailing: Text(amount(balance.cents.abs()),
+                trailing: Text(shownAmount(balance.cents.abs()),
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: balance.cents == 0
@@ -338,11 +387,16 @@ class _SettlementPageState extends State<SettlementPage> {
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 20),
+            if (hasAlternateCurrency)
+              Text(l.settlementLedgerNote + ': ' +
+                widget.spendingCurrency,
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 8),
             Text(l.repaymentLimitations,
               style: Theme.of(context).textTheme.bodySmall),
           ],
         ],
-      ),
+      )),
     );
   }
 }
