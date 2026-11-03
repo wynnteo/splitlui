@@ -99,6 +99,14 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                 style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(l.paidBy + ': ' + memberName(expense['paid_by'] as String?)),
+              if ((expense['currency'] as String? ?? widget.currency) != widget.currency) ...[
+                const SizedBox(height: 8),
+                Text(l.expenseRateToGroup + ': 1 ' +
+                  (expense['currency'] as String) + ' = ' +
+                  (expense['rate_to_spending'] as num).toString() + ' ' +
+                  widget.currency,
+                  style: Theme.of(context).textTheme.bodySmall),
+              ],
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
