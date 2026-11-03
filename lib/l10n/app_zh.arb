@@ -138,5 +138,8 @@
   "inviteInstallApp": "安装 SplitLui",
   "inviteShareButton": "分享邀请",
   "inviteShareHint": "请私下分享给你信任的人。任何拿到邀请码的人都可以加入，直到组织者重置邀请码。",
-  "inviteInvalidCode": "请贴上有效的邀请码或完整邀请消息。"
+  "inviteInvalidCode": "请贴上有效的邀请码或完整邀请消息。",
+  "expenseFundAvailable": "共同基金可用余额",
+  "expenseFundInsufficient": "共同基金余额不足，请先补款或更换付款人。",
+  "expenseFundNoSplit": "由共同基金付款，不会另外分摊给成员，也不会产生个人欠款。"
 }

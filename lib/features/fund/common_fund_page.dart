@@ -115,54 +115,26 @@ class _CommonFundPageState extends State<CommonFundPage> {
   }
 
   Future<void> editThreshold() async {
-    final l = AppLocalizations.of(context)!;
-    final current = (account?['low_balance_threshold'] as num?)?.toDouble() ?? 0;
-    final controller = TextEditingController(
-      text: current.toStringAsFixed(2));
+    final current =
+        (account?['low_balance_threshold'] as num?)?.toDouble() ?? 0;
+    final value = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (_) => _FundThresholdSheet(
+        initial: current.toStringAsFixed(2),
+        currency: widget.currency,
+      ),
+    );
+    if (value == null) return;
     try {
-      final value = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l.fundThreshold),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(l.fundThresholdHint),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(prefixText: widget.currency + ' '),
-            ),
-          ]),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l.cloudCancel)),
-            FilledButton(
-              onPressed: () {
-                final raw = controller.text.trim();
-                final n = double.tryParse(raw);
-                if (RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(raw) &&
-                    n != null && n.isFinite && n <= 9999999999999999) {
-                  Navigator.pop(dialogContext, raw);
-                }
-              },
-              child: Text(l.cloudContinue)),
-          ],
-        ),
-      );
-      if (value == null) return;
-      try {
-        await api.setThreshold(widget.groupId, double.parse(value));
-        if (mounted) await refresh();
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())));
-      }
-    } finally {
-      // Let the dialog finish its closing animation before disposing.
-      // Keeping a controller alive until this method ends is sufficient
-      // for normal showDialog completion.
-      controller.dispose();
+      await api.setThreshold(widget.groupId, double.parse(value));
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -184,8 +156,8 @@ class _CommonFundPageState extends State<CommonFundPage> {
             tooltip: l.cloudRefresh),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      body: SafeArea(top: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
           Text(widget.groupName,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -267,7 +239,7 @@ class _CommonFundPageState extends State<CommonFundPage> {
             const SizedBox(height: 10),
           ],
         ],
-      ),
+      )),
     );
   }
 }
@@ -334,10 +306,10 @@ class _FundEntryFormState extends State<FundEntryForm> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.contribution
         ? l.fundAddContribution : l.fundPayExpense)),
-      body: Form(
+      body: SafeArea(top: false, child: Form(
         key: form,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           children: [
             LuiFormLabel(widget.contribution
               ? l.fundContributionNote : l.expenseTitle),
@@ -392,6 +364,79 @@ class _FundEntryFormState extends State<FundEntryForm> {
                 : Text(l.saveExpense),
             ),
           ],
+        ),
+      )),
+    );
+  }
+}
+
+
+class _FundThresholdSheet extends StatefulWidget {
+  const _FundThresholdSheet({required this.initial, required this.currency});
+  final String initial, currency;
+  @override State<_FundThresholdSheet> createState() => _FundThresholdSheetState();
+}
+
+class _FundThresholdSheetState extends State<_FundThresholdSheet> {
+  late final TextEditingController value;
+  final form = GlobalKey<FormState>();
+
+  @override void initState() {
+    super.initState();
+    value = TextEditingController(text: widget.initial);
+  }
+
+  @override void dispose() {
+    value.dispose();
+    super.dispose();
+  }
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        child: Form(key: form,
+          child: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(l.fundThreshold,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(l.fundThresholdHint,
+                style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: value,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true),
+                decoration: InputDecoration(prefixText: widget.currency + ' '),
+                validator: (text) {
+                  final raw = (text ?? '').trim();
+                  final n = double.tryParse(raw);
+                  if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(raw) ||
+                      n == null || !n.isFinite || n < 0 ||
+                      n > 9999999999999999) return l.invalid;
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () {
+                  if (form.currentState?.validate() == true) {
+                    Navigator.pop(context,value.text.trim());
+                  }
+                },
+                child: Text(l.saveChanges),
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l.cloudCancel),
+              ),
+            ]),
         ),
       ),
     );

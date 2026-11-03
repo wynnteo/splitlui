@@ -138,5 +138,8 @@
   "inviteInstallApp": "Install SplitLui",
   "inviteShareButton": "Share invite",
   "inviteShareHint": "Share this code privately with people you trust. Anyone with it can join until the organiser resets it.",
-  "inviteInvalidCode": "Paste a valid invitation code or the full invitation message."
+  "inviteInvalidCode": "Paste a valid invitation code or the full invitation message.",
+  "expenseFundAvailable": "Common Fund available",
+  "expenseFundInsufficient": "Not enough Common Fund balance. Please top up the fund or change the payer.",
+  "expenseFundNoSplit": "Paid from Common Fund. No individual shares or personal repayment will be created."
 }

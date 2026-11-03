@@ -13,6 +13,30 @@ class SharedExpenseApi {
     return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  Future<Map<String,dynamic>?> fundBalance(String groupId) async {
+    return await db.from('trip_fund_accounts')
+        .select('balance').eq('group_id', groupId).maybeSingle();
+  }
+
+  Future<List<Map<String,dynamic>>> fundPurchases(String groupId) async {
+    final rows = await db.from('trip_fund_entries')
+        .select('id,description,amount,original_amount,original_currency,rate_to_spending,created_at')
+        .eq('group_id', groupId).eq('entry_type','expense')
+        .order('created_at',ascending:false);
+    return rows.map((r) => Map<String,dynamic>.from(r)).toList();
+  }
+
+  Future<void> addFundPurchase({
+    required String groupId, required String title,
+    required double amount, required String currency,
+    required double rateToSpending,
+  }) async {
+    await db.rpc('record_trip_fund_purchase',params: {
+      'p_group':groupId, 'p_title':title.trim(), 'p_amount':amount,
+      'p_currency':currency, 'p_rate_to_spending':rateToSpending,
+    });
+  }
+
   Future<void> add({
     required String groupId, required String title,
     required double amount, required String currency,
@@ -50,6 +74,7 @@ class SharedExpensesPage extends StatefulWidget {
 class _SharedExpensesPageState extends State<SharedExpensesPage> {
   final api = SharedExpenseApi();
   List<Map<String, dynamic>> expenses = [];
+  List<Map<String,dynamic>> fundPurchases = [];
   bool busy = true;
   String? error;
 
@@ -65,8 +90,14 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
   Future<void> refresh() async {
     setState(() { busy = true; error = null; });
     try {
-      final result = await api.list(widget.groupId);
-      if (mounted) setState(() => expenses = result);
+      final result = await Future.wait([
+        api.list(widget.groupId),
+        api.fundPurchases(widget.groupId),
+      ]);
+      if (mounted) setState(() {
+        expenses = result[0];
+        fundPurchases = result[1];
+      });
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
@@ -146,7 +177,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
       appBar: AppBar(title: Text(l.expenses),
         actions: [IconButton(onPressed: busy ? null : refresh,
           icon: const Icon(Icons.refresh_rounded), tooltip: l.cloudRefresh)]),
-      body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      body: SafeArea(top: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
           Text(widget.groupName,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -160,9 +192,26 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
           const SizedBox(height: 24),
           if (busy) const Center(child: CircularProgressIndicator()),
           if (error != null) Text(error!, style: TextStyle(color: scheme.error)),
-          if (!busy && error == null && expenses.isEmpty)
+          if (!busy && error == null &&
+              expenses.isEmpty && fundPurchases.isEmpty)
             Card(child: Padding(padding: const EdgeInsets.all(24),
               child: Text(l.noExpenses, textAlign: TextAlign.center))),
+          for (final purchase in fundPurchases) ...[
+            LuiFeatureTile(
+              icon: Icons.account_balance_wallet_outlined,
+              title: purchase['description'] as String,
+              subtitle: l.paidBy + ': ' + l.fund +
+                  ((purchase['original_currency'] as String?) != null &&
+                    purchase['original_currency'] != widget.currency
+                    ? ' · ' + (purchase['original_currency'] as String) +
+                      ' ' + (purchase['original_amount'] as num).toStringAsFixed(2)
+                    : ''),
+              trailing: Text(widget.currency + ' ' +
+                (purchase['amount'] as num).toStringAsFixed(2),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(height: 10),
+          ],
           for (final expense in expenses) ...[
             LuiFeatureTile(
               icon: Icons.receipt_long_outlined,
@@ -187,7 +236,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
             ),
             const SizedBox(height: 10),
           ],
-        ]),
+        ])),
     );
   }
 }
@@ -215,6 +264,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     'SGD','JPY','MYR','THB','USD','EUR','GBP','KRW','TWD','IDR','CNY','AUD',
   ];
   String? payer;
+  bool payFromFund = false;
+  double? fundAvailable;
+  bool fundLoading = true;
   late String expenseCurrency;
   bool saving = false;
 
@@ -227,6 +279,19 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
       ? ownId : (widget.members.isEmpty ? null :
           widget.members.first['user_id'] as String);
     selected.addAll(widget.members.map((m) => m['user_id'] as String));
+    loadFund();
+  }
+
+  Future<void> loadFund() async {
+    try {
+      final data = await widget.api.fundBalance(widget.groupId);
+      if (mounted) setState(() {
+        fundAvailable = (data?['balance'] as num?)?.toDouble() ?? 0;
+        fundLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() {fundAvailable = 0;fundLoading = false;});
+    }
   }
 
   @override void dispose() {
@@ -236,13 +301,29 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   Future<void> save() async {
     if (saving || !(form.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
-    if (selected.isEmpty || payer == null) {
+    if (!payFromFund && (selected.isEmpty || payer == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l.selectParticipants)));
       return;
     }
+    if (payFromFund &&
+        (convertedAmount == null || convertedAmount! > (fundAvailable ?? 0))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.expenseFundInsufficient)));
+      return;
+    }
     setState(() => saving = true);
     try {
+      if (payFromFund) {
+        await widget.api.addFundPurchase(
+          groupId: widget.groupId,
+          title: title.text,
+          amount: double.parse(amount.text.trim()),
+          currency: expenseCurrency,
+          rateToSpending: expenseCurrency == widget.currency
+              ? 1 : double.parse(exchangeRate.text.trim()),
+        );
+      } else {
       await widget.api.add(
         groupId: widget.groupId, title: title.text,
         amount: double.parse(amount.text.trim()),
@@ -253,6 +334,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         splitBetween: widget.members.map((m) => m['user_id'] as String)
           .where(selected.contains).toList(),
       );
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -290,8 +372,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l.addExpense)),
-      body: Form(key: form, child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+      body: SafeArea(top: false, child: Form(key: form,
+        child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
           LuiFormLabel(l.expenseTitle),
           TextFormField(
             controller: title, maxLength: 120,
@@ -299,6 +382,16 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
             decoration: InputDecoration(hintText: l.expenseTitleHint),
             validator: (v) => (v ?? '').trim().isEmpty ? l.required : null),
           const SizedBox(height: 16),
+          LuiFormLabel(l.expenseCurrency),
+          DropdownButtonFormField<String>(
+            value: expenseCurrency,
+            isExpanded: true,
+            decoration: const InputDecoration(),
+            items: currencies.map((c) =>
+              DropdownMenuItem(value: c, child: Text(c))).toList(),
+            onChanged: saving ? null : chooseCurrency,
+          ),
+          const SizedBox(height: 18),
           LuiFormLabel(l.expenseAmount),
           TextFormField(
             controller: amount,
@@ -315,17 +408,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
             },
           ),
           const SizedBox(height: 18),
-          LuiFormLabel(l.expenseCurrency),
-          DropdownButtonFormField<String>(
-            value: expenseCurrency,
-            isExpanded: true,
-            decoration: const InputDecoration(),
-            items: currencies.map((c) =>
-              DropdownMenuItem(value: c, child: Text(c))).toList(),
-            onChanged: saving ? null : chooseCurrency,
-          ),
           if (expenseCurrency != widget.currency) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 6),
             LuiFormLabel(l.expenseRateToGroup),
             TextFormField(
               controller: exchangeRate,
@@ -353,7 +437,18 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           ],
           const SizedBox(height: 22),
           LuiFormLabel(l.paidBy),
-          DropdownButtonFormField<String>(
+          if (!fundLoading && (fundAvailable ?? 0) > 0) ...[
+            Card(child: SwitchListTile.adaptive(
+              title: Text(l.fund),
+              subtitle: Text(l.expenseFundAvailable + ': ' +
+                widget.currency + ' ' + fundAvailable!.toStringAsFixed(2)),
+              value: payFromFund,
+              onChanged: saving ? null :
+                (value) => setState(() => payFromFund = value),
+            )),
+            const SizedBox(height: 12),
+          ],
+          if (!payFromFund) DropdownButtonFormField<String>(
             value: payer, isExpanded: true,
             decoration: const InputDecoration(),
             items: widget.members.map((m) => DropdownMenuItem(
@@ -361,6 +456,13 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               child: Text(m['nickname'] as String))).toList(),
             onChanged: saving ? null : (v) => setState(() => payer = v),
           ),
+          if (payFromFund && convertedAmount != null &&
+              convertedAmount! > (fundAvailable ?? 0)) ...[
+            const SizedBox(height: 8),
+            Text(l.expenseFundInsufficient,
+              style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ],
+          if (!payFromFund) ...[
           const SizedBox(height: 24),
           LuiFormLabel(l.splitBetween),
           Card(child: Column(children: [
@@ -381,6 +483,12 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           const SizedBox(height: 12),
           Text(l.equalSplitOnly,
             style: Theme.of(context).textTheme.bodySmall),
+          ],
+          if (payFromFund) ...[
+            const SizedBox(height: 12),
+            Text(l.expenseFundNoSplit,
+              style: Theme.of(context).textTheme.bodySmall),
+          ],
           if (expenseCurrency != widget.currency) ...[
             const SizedBox(height: 8),
             Text(l.expenseConversionHint,
@@ -395,7 +503,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               : Text(l.saveExpense),
           ),
         ]),
-      ),
+      )),
     );
   }
 }

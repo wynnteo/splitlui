@@ -282,9 +282,9 @@ class _CreateGroupState extends State<CreateGroup> {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(widget.initial == null ? t('new') : l.editGroup)),
-      body: Form(
+      body: SafeArea(top: false, child: Form(
         key: form,
-        child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
+        child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 40), children: [
           Text(widget.initial == null ? t('new') : l.editGroup, style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700, letterSpacing: -0.8)),
           const SizedBox(height: 6),
@@ -380,7 +380,7 @@ class _CreateGroupState extends State<CreateGroup> {
             child: Text(widget.initial == null ? t('create') : l.saveChanges),
           ),
         ]),
-      ),
+      )),
     );
   }
 }
