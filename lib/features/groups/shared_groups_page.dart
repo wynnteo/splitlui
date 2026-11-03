@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,6 +36,20 @@ class SharedGroupApi {
     });
   }
 
+  Future<void> updateGroup(String id, Group group) async {
+    await db.rpc('update_trip_group', params: {
+      'p_group': id, 'p_name': group.name,
+      'p_is_travel': group.travel, 'p_rate': group.rate,
+      'p_budget': group.budget,
+    });
+  }
+
+  Future<void> deleteGroup(String id, String confirmation) async {
+    await db.rpc('delete_trip_group', params: {
+      'p_group': id, 'p_confirm_name': confirmation,
+    });
+  }
+
   Future<void> join(String code, String nickname) async {
     await auth();
     await db.rpc('join_trip_group', params: {
@@ -56,13 +71,15 @@ class SharedGroupApi {
 }
 
 class SharedGroupsPage extends StatefulWidget {
-  const SharedGroupsPage({super.key});
+  const SharedGroupsPage({super.key, this.onSettings});
+  final VoidCallback? onSettings;
   @override State<SharedGroupsPage> createState() => _SharedGroupsPageState();
 }
 
 class _SharedGroupsPageState extends State<SharedGroupsPage> {
   final api = SharedGroupApi();
   List<Map<String, dynamic>> groups = [];
+  List<Group> legacyGroups = [];
   bool busy = true;
   String? error;
   String nickname = '';
@@ -75,7 +92,19 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
       final prefs = await SharedPreferences.getInstance();
       nickname = prefs.getString('shared_nickname') ?? '';
       final result = await api.groups();
-      if (mounted) setState(() => groups = result);
+      final legacy = <Group>[];
+      try {
+        final raw = prefs.getString('groups_v1');
+        if (raw != null) {
+          for (final item in (jsonDecode(raw) as List)) {
+            legacy.add(Group.fromJson(Map<String, dynamic>.from(item as Map)));
+          }
+        }
+      } catch (_) { /* Keep malformed local backups untouched. */ }
+      if (mounted) setState(() {
+        groups = result;
+        legacyGroups = legacy;
+      });
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
@@ -144,15 +173,52 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
     if (code != null) await execute(() => api.join(code, name));
   }
 
+  Future<void> migrateLegacy(Group group) async {
+    final label = await getNickname();
+    if (!mounted || label == null) return;
+    await execute(() async {
+      await api.create(group, label);
+      // Delete the device-only copy only after successful cloud creation.
+      final prefs = await SharedPreferences.getInstance();
+      final remaining = legacyGroups.where((g) => g.id != group.id).toList();
+      await prefs.setString('groups_v1',
+        jsonEncode(remaining.map((g) => g.toJson()).toList()));
+    });
+  }
+
+  Future<void> deleteLegacy(Group group) async {
+    final l = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(l.deleteLocalGroup),
+        content: Text(l.deleteLocalWarning),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false),
+            child: Text(l.cloudCancel)),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true),
+            child: Text(l.deleteGroup)),
+        ],
+      ));
+    if (confirmed != true) return;
+    final prefs = await SharedPreferences.getInstance();
+    final remaining = legacyGroups.where((g) => g.id != group.id).toList();
+    await prefs.setString('groups_v1',
+      jsonEncode(remaining.map((g) => g.toJson()).toList()));
+    if (mounted) setState(() => legacyGroups = remaining);
+  }
+
   @override Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l.cloudGroups), actions: [
+      appBar: AppBar(title: Text(l.groups), actions: [
+        if (widget.onSettings != null) IconButton(
+          onPressed: widget.onSettings,
+          tooltip: l.settings, icon: const Icon(Icons.settings_outlined)),
         IconButton(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh),
           tooltip: l.cloudRefresh),
       ]),
       body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
-        Text(l.cloudTitle,
+        Text(l.groups,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700, letterSpacing: -0.7)),
         const SizedBox(height: 8),
@@ -176,7 +242,7 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
           padding: const EdgeInsets.all(18),
           child: Text(error!, style: TextStyle(
             color: Theme.of(context).colorScheme.error)))),
-        if (!busy && error == null && groups.isEmpty)
+        if (!busy && error == null && groups.isEmpty && legacyGroups.isEmpty)
           Card(child: Padding(padding: const EdgeInsets.all(24),
             child: Column(children: [
               Icon(Icons.groups_2_outlined, size: 36,
@@ -191,10 +257,43 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
             title: g['name'] as String,
             subtitle: (g['spending_currency'] as String) + ' / ' +
               (g['settlement_currency'] as String),
-            onTap: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => SharedGroupDetail(api: api, group: g))),
+            onTap: () async {
+              await Navigator.push<bool>(context,
+                MaterialPageRoute(builder: (_) =>
+                  SharedGroupDetail(api: api, group: g)));
+              // Also reload after edits when Android's Back button is used.
+              if (mounted) await refresh();
+            },
           ),
           const SizedBox(height: 10),
+        ],
+        if (legacyGroups.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          LuiSectionHeading(title: l.olderDeviceGroups),
+          const SizedBox(height: 8),
+          Text(l.olderDeviceGroupsHint,
+            style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 10),
+          for (final g in legacyGroups) ...[
+            Card(child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(g.name, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 10),
+                  Wrap(spacing: 8, children: [
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : () => migrateLegacy(g),
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      label: Text(l.moveToGroups)),
+                    TextButton(
+                      onPressed: busy ? null : () => deleteLegacy(g),
+                      child: Text(l.deleteGroup)),
+                  ]),
+                ]),
+            )),
+            const SizedBox(height: 10),
+          ],
         ],
         const SizedBox(height: 20),
         Text(l.cloudIdentityWarning,
@@ -212,16 +311,21 @@ class SharedGroupDetail extends StatefulWidget {
 }
 
 class _SharedGroupDetailState extends State<SharedGroupDetail> {
+  late Map<String, dynamic> group;
   bool busy = true;
   String? error, invite;
   List<Map<String, dynamic>> members = [];
 
-  @override void initState() { super.initState(); refresh(); }
+  @override void initState() {
+    super.initState();
+    group = Map<String, dynamic>.from(widget.group);
+    refresh();
+  }
 
   Future<void> refresh() async {
     setState(() { busy = true; error = null; });
     try {
-      final id = widget.group['id'] as String;
+      final id = group['id'] as String;
       final data = await widget.api.members(id);
       final token = await widget.api.invite(id);
       if (mounted) setState(() { members = data; invite = token; });
@@ -234,11 +338,73 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
 
   Future<void> resetCode() async {
     try {
-      final token = await widget.api.rotate(widget.group['id'] as String);
+      final token = await widget.api.rotate(group['id'] as String);
       if (mounted) setState(() => invite = token);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> editGroup() async {
+    final l = AppLocalizations.of(context)!;
+    final initial = Group(
+      group['id'] as String, group['name'] as String,
+      group['is_travel'] as bool, group['spending_currency'] as String,
+      group['settlement_currency'] as String,
+      (group['exchange_rate'] as num).toDouble(),
+      (group['budget'] as num?)?.toDouble(),
+    );
+    final updated = await Navigator.push<Group>(context, MaterialPageRoute(
+      builder: (_) => CreateGroup(initial: initial, t: (key) => {
+        'new':l.newGroup, 'name':l.name, 'travel':l.travel,
+        'hangout':l.hangout, 'spending':l.spending,
+        'settlement':l.settlement, 'rate':l.rate, 'budget':l.budget,
+        'create':l.create, 'required':l.required, 'invalid':l.invalid,
+      }[key] ?? key),
+    ));
+    if (!mounted || updated == null) return;
+    setState(() => busy = true);
+    try {
+      await widget.api.updateGroup(group['id'] as String, updated);
+      if (!mounted) return;
+      setState(() {
+        group['name'] = updated.name;
+        group['is_travel'] = updated.travel;
+        group['exchange_rate'] = updated.rate;
+        group['budget'] = updated.budget;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.groupUpdated)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> deleteGroup() async {
+    final l = AppLocalizations.of(context)!;
+    final confirmedName = await showDialog<String>(
+      context: context,
+      builder: (_) => _SharedGroupTextDialog(
+        title: l.deleteGroup,
+        hint: l.typeGroupName + ': ' + (group['name'] as String),
+        initial: '',
+        cancelLabel: l.cloudCancel, confirmLabel: l.deleteGroup,
+      ),
+    );
+    if (!mounted || confirmedName == null) return;
+    setState(() => busy = true);
+    try {
+      await widget.api.deleteGroup(group['id'] as String, confirmedName);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
@@ -247,11 +413,11 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
     final uid = Supabase.instance.client.auth.currentUser?.id;
     final owner = members.any((m) => m['user_id'] == uid && m['role'] == 'owner');
     return Scaffold(
-      appBar: AppBar(title: Text(widget.group['name'] as String),
+      appBar: AppBar(title: Text(group['name'] as String),
         actions: [IconButton(onPressed: refresh, icon: const Icon(Icons.refresh),
           tooltip: l.cloudRefresh)]),
       body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
-        Text(widget.group['name'] as String,
+        Text(group['name'] as String,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700, letterSpacing: -0.7)),
         const SizedBox(height: 24),
@@ -284,6 +450,22 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
               label: Text(l.cloudResetInvite)),
           ]),
         )),
+        if (owner) ...[
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: busy ? null : editGroup,
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(l.editGroup),
+            )),
+            const SizedBox(width: 10),
+            OutlinedButton.icon(
+              onPressed: busy ? null : deleteGroup,
+              icon: const Icon(Icons.delete_outline),
+              label: Text(l.deleteGroup),
+            ),
+          ]),
+        ],
         const SizedBox(height: 24),
         LuiFeatureTile(
           icon: Icons.receipt_long_outlined,
@@ -292,9 +474,9 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           onTap: busy || error != null ? null : () =>
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => SharedExpensesPage(
-                groupId: widget.group['id'] as String,
-                groupName: widget.group['name'] as String,
-                currency: widget.group['spending_currency'] as String,
+                groupId: group['id'] as String,
+                groupName: group['name'] as String,
+                currency: group['spending_currency'] as String,
                 members: members,
               ),
             )),
@@ -307,9 +489,9 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
           onTap: busy || error != null ? null : () =>
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => CommonFundPage(
-                groupId: widget.group['id'] as String,
-                groupName: widget.group['name'] as String,
-                currency: widget.group['spending_currency'] as String,
+                groupId: group['id'] as String,
+                groupName: group['name'] as String,
+                currency: group['spending_currency'] as String,
                 members: members,
               ),
             )),

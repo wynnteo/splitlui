@@ -82,5 +82,15 @@
   "thaiBaht": "THB · Thai Baht (฿)",
   "localOnlyFeatures": "This group is saved only on this device. Expenses, Common Fund and member management work in Shared Groups, where everyone can join.",
   "openSharedGroups": "Open shared groups",
-  "createLocalGroup": "Create local group"
+  "createLocalGroup": "Create local group",
+  "editGroup": "Edit group",
+  "saveChanges": "Save changes",
+  "groupUpdated": "Group updated",
+  "deleteGroup": "Delete group",
+  "typeGroupName": "Type the group name to permanently delete this group and all its expenses, funds and members",
+  "olderDeviceGroups": "Older groups on this device",
+  "olderDeviceGroupsHint": "These were created before group syncing. Move them online to use Expenses and Common Fund.",
+  "moveToGroups": "Move to Groups",
+  "deleteLocalGroup": "Delete device-only group?",
+  "deleteLocalWarning": "This removes the group from this phone. It cannot be recovered."
 }
