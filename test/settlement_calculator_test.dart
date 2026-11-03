@@ -75,6 +75,58 @@ void main() {
     ), throwsStateError);
   });
 
+  test('confirmed partial and full repayments update outstanding balances', () {
+    final expenses = [
+      {'id': 'dinner', 'paid_by': 'alice', 'amount_spending': 100.00},
+    ];
+    final shares = [
+      {'expense_id': 'dinner', 'user_id': 'alice', 'share_spending': 50.00},
+      {'expense_id': 'dinner', 'user_id': 'bob', 'share_spending': 50.00},
+    ];
+    final partial = SettlementCalculator.calculate(
+      memberIds: ['alice', 'bob'], expenses: expenses, shares: shares,
+      repayments: [
+        {'id':'p1','from_user_id':'bob','to_user_id':'alice',
+         'amount_spending':20.00},
+      ],
+    );
+    expect(partial.transfers.single.cents, 3000);
+    expect(partial.transfers.single.fromUserId, 'bob');
+    expect(partial.transfers.single.toUserId, 'alice');
+
+    final paid = SettlementCalculator.calculate(
+      memberIds: ['alice', 'bob'], expenses: expenses, shares: shares,
+      repayments: [
+        {'id':'p1','from_user_id':'bob','to_user_id':'alice',
+         'amount_spending':20.00},
+        {'id':'p2','from_user_id':'bob','to_user_id':'alice',
+         'amount_spending':30.00},
+      ],
+    );
+    expect(paid.transfers, isEmpty);
+    expect(paid.balances.every((b) => b.cents == 0), isTrue);
+    expect(paid.totalExpenseCents, 10000);
+  });
+
+  test('rejects duplicate receipt IDs', () {
+    expect(() => SettlementCalculator.calculate(
+      memberIds: ['alice','bob'],
+      expenses: [
+        {'id':'e','paid_by':'alice','amount_spending':20.00}
+      ],
+      shares: [
+        {'expense_id':'e','user_id':'alice','share_spending':10.00},
+        {'expense_id':'e','user_id':'bob','share_spending':10.00},
+      ],
+      repayments: [
+        {'id':'duplicate','from_user_id':'bob','to_user_id':'alice',
+         'amount_spending':1.00},
+        {'id':'duplicate','from_user_id':'bob','to_user_id':'alice',
+         'amount_spending':1.00},
+      ],
+    ), throwsStateError);
+  });
+
   test('decimal text conversion uses exact cents', () {
     expect(SettlementCalculator.cents('115.05'), 11505);
     expect(SettlementCalculator.cents('0.01'), 1);
