@@ -274,6 +274,30 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   bool fundLoading = true;
   late String expenseCurrency;
   bool saving = false;
+  bool readingReceipt = false;
+  ReceiptDraft? receipt;
+  final receiptStorage = ReceiptStorage();
+
+  Future<void> chooseReceipt(ImageSource source) async {
+    if (saving || readingReceipt) return;
+    setState(() => readingReceipt = true);
+    try {
+      final picked = await ReceiptCapture.choose(source);
+      if (!mounted || picked == null) return;
+      setState(() {
+        receipt = picked;
+        // Never overwrite a user-entered value.
+        if (amount.text.trim().isEmpty && picked.suggestedTotal != null) {
+          amount.text = picked.suggestedTotal!;
+        }
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => readingReceipt = false);
+    }
+  }
 
   @override void initState() {
     super.initState();
@@ -319,8 +343,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
     setState(() => saving = true);
     try {
+      String createdId;
       if (payFromFund) {
-        await widget.api.addFundPurchase(
+        createdId = await widget.api.addFundPurchase(
           groupId: widget.groupId,
           title: title.text,
           amount: double.parse(amount.text.trim()),
@@ -329,16 +354,38 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               ? 1 : double.parse(exchangeRate.text.trim()),
         );
       } else {
-      await widget.api.add(
-        groupId: widget.groupId, title: title.text,
-        amount: double.parse(amount.text.trim()),
-        currency: expenseCurrency,
-        rateToSpending: expenseCurrency == widget.currency
-          ? 1 : double.parse(exchangeRate.text.trim()),
-        paidBy: payer!,
-        splitBetween: widget.members.map((m) => m['user_id'] as String)
-          .where(selected.contains).toList(),
-      );
+        createdId = await widget.api.add(
+          groupId: widget.groupId,
+          title: title.text,
+          amount: double.parse(amount.text.trim()),
+          currency: expenseCurrency,
+          rateToSpending: expenseCurrency == widget.currency
+              ? 1 : double.parse(exchangeRate.text.trim()),
+          paidBy: payer!,
+          splitBetween: widget.members
+              .map((m) => m['user_id'] as String)
+              .where(selected.contains).toList(),
+        );
+      }
+      // The expense is already committed. A failed receipt upload must not
+      // tempt users to create a duplicate charge by pressing Save again.
+      if (receipt != null) {
+        try {
+          await receiptStorage.upload(
+            groupId: widget.groupId,
+            jpeg: receipt!.jpeg,
+            expenseId: payFromFund ? null : createdId,
+            fundEntryId: payFromFund ? createdId : null,
+          );
+        } catch (_) {
+          if (mounted) {
+            Navigator.pop(context, true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(
+                AppLocalizations.of(context)!.receiptUploadFailed)));
+          }
+          return;
+        }
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -440,6 +487,43 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                 convertedAmount!.toStringAsFixed(2),
                 style: Theme.of(context).textTheme.bodyMedium),
           ],
+          const SizedBox(height: 22),
+          LuiFormLabel(l.receiptAttachment),
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (receipt != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(receipt!.jpeg,
+                      height: 180, fit: BoxFit.contain)),
+                  const SizedBox(height: 8),
+                  Text(l.receiptReviewHint,
+                    style: Theme.of(context).textTheme.bodySmall),
+                  TextButton.icon(
+                    onPressed: saving ? null :
+                      () => setState(() => receipt = null),
+                    icon: const Icon(Icons.close_rounded),
+                    label: Text(l.receiptRemove),
+                  ),
+                ],
+                if (readingReceipt)
+                  const Center(child: CircularProgressIndicator()),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  OutlinedButton.icon(
+                    onPressed: saving || readingReceipt ? null :
+                      () => chooseReceipt(ImageSource.camera),
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: Text(l.receiptCamera)),
+                  OutlinedButton.icon(
+                    onPressed: saving || readingReceipt ? null :
+                      () => chooseReceipt(ImageSource.gallery),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text(l.receiptGallery)),
+                ]),
+              ]),
+          )),
           const SizedBox(height: 22),
           LuiFormLabel(l.paidBy),
           if (!fundLoading && (fundAvailable ?? 0) > 0) ...[
