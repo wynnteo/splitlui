@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -125,17 +127,25 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
   List<Map<String,dynamic>> fundPurchases = [];
   List<Map<String,Object?>> queuedExpenses = [];
   bool showingOfflineSnapshot = false;
+  bool _refreshing = false;
+  StreamSubscription<List<ConnectivityResult>>? _networkSubscription;
   bool busy = true;
   String? error;
 
   @override void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _networkSubscription = Connectivity().onConnectivityChanged.listen((states) {
+      if (states.any((state) => state != ConnectivityResult.none) && mounted) {
+        refresh();
+      }
+    });
     refresh();
   }
 
   @override void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _networkSubscription?.cancel();
     super.dispose();
   }
 
@@ -151,7 +161,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
   }
 
   Future<void> refresh() async {
-    if (busy && queuedExpenses.isNotEmpty) return;
+    if (_refreshing) return;
+    _refreshing = true;
     if (mounted) setState(() { busy = true; error = null; });
     try {
       // Pending entries always come from device storage first so they remain
@@ -161,7 +172,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
       final cached = await storage.cachedExpenses(widget.groupId);
       if (mounted) setState(() {
         queuedExpenses = before;
-        if (cached.isNotEmpty && expenses.isEmpty) {
+        if (cached.isNotEmpty) {
           expenses = cached;
           showingOfflineSnapshot = true;
         }
@@ -182,9 +193,13 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     } catch (e) {
       if (mounted) {
         // Do not erase the last local or online data on network failure.
-        setState(() => error = e.toString());
+        setState(() {
+          error = e.toString();
+          if (expenses.isNotEmpty) showingOfflineSnapshot = true;
+        });
       }
     } finally {
+      _refreshing = false;
       if (mounted) setState(() => busy = false);
     }
   }
