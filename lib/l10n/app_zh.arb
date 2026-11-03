@@ -107,5 +107,13 @@
   "settlementIsOwed": "应收款",
   "settlementOwes": "应付款",
   "settlementBalanced": "已平衡",
-  "settlementLimitations": "仅供参考，不会实际转账或记录已付款。结算货币金额按照群组当前汇率估算。共同基金的出资、支出及退款暂不计入个人应收应付，结束旅程前请另行核对。"
+  "settlementLimitations": "仅供参考，不会实际转账或记录已付款。结算货币金额按照群组当前汇率估算。共同基金的出资、支出及退款暂不计入个人应收应付，结束旅程前请另行核对。",
+  "repaymentConfirmReceived": "确认已收到还款",
+  "repaymentConfirmWarning": "请确定已经实际收到款项才确认。此功能不会自动通过 PayNow 或银行转账，可记录部分还款。",
+  "repaymentNote": "还款备注（选填）",
+  "repaymentNoteHint": "例如：已收到 PayNow 转账",
+  "repaymentHistory": "已确认还款记录",
+  "repaymentNoRecords": "目前还没有已确认的还款。",
+  "repaymentReceivedRecorded": "已收到并记录",
+  "repaymentLimitations": "只有收款人才可以确认已收到款项。还款会减少个人应收应付，不会更改共同基金余额。本功能不会自动转账或向银行核实。错误确认目前不能撤销，请核对后再记录。"
 }
