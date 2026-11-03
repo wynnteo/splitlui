@@ -130,5 +130,7 @@
   "payNowNotPayment": "This is a payment request only. SplitLui does not send money or confirm a transfer.",
   "payNowCopied": "PayNow number copied",
   "payNowCopyNumber": "Copy PayNow number",
-  "payNowShareRequest": "Share payment request"
+  "payNowShareRequest": "Share payment request",
+  "payNowEstimatedSgd": "Approximate SGD equivalent (confirm rate before payment)",
+  "payNowAgreeSgd": "PayNow transfers in SGD. Agree the SGD amount with the recipient before paying."
 }
