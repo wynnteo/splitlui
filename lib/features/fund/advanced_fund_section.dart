@@ -106,7 +106,7 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
               ],
             ))),
           ),
-        ));
+        );
     } finally {input.dispose();}
   }
   Future<void> perform(Future<dynamic> Function() action) async {
