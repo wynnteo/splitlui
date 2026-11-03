@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
+import 'receipt_capture.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -26,28 +28,30 @@ class SharedExpenseApi {
     return rows.map((r) => Map<String,dynamic>.from(r)).toList();
   }
 
-  Future<void> addFundPurchase({
+  Future<String> addFundPurchase({
     required String groupId, required String title,
     required double amount, required String currency,
     required double rateToSpending,
   }) async {
-    await db.rpc('record_trip_fund_purchase',params: {
+    final id = await db.rpc('record_trip_fund_purchase',params: {
       'p_group':groupId, 'p_title':title.trim(), 'p_amount':amount,
       'p_currency':currency, 'p_rate_to_spending':rateToSpending,
     });
+    return id.toString();
   }
 
-  Future<void> add({
+  Future<String> add({
     required String groupId, required String title,
     required double amount, required String currency,
     required double rateToSpending, required String paidBy,
     required List<String> splitBetween,
   }) async {
-    await db.rpc('add_trip_expense_v2', params: {
+    final id = await db.rpc('add_trip_expense_v2', params: {
       'p_group': groupId, 'p_title': title.trim(), 'p_amount': amount,
       'p_currency': currency, 'p_rate_to_spending': rateToSpending,
       'p_paid_by': paidBy, 'p_split_between': splitBetween,
     });
+    return id.toString();
   }
 
   Future<List<Map<String, dynamic>>> shares(String expenseId) async {
@@ -122,7 +126,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
       context: context, isScrollControlled: true, showDragHandle: true,
       builder: (_) => FutureBuilder<List<Map<String, dynamic>>>(
         future: api.shares(expense['id'] as String),
-        builder: (context, snapshot) => SafeArea(child: Padding(
+        builder: (context, snapshot) => SafeArea(child: SingleChildScrollView(
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 26),
           child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -138,6 +143,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                   widget.currency,
                   style: Theme.of(context).textTheme.bodySmall),
               ],
+              ReceiptAttachmentPreview(expenseId: expense['id'] as String),
               const SizedBox(height: 18),
               if (snapshot.connectionState != ConnectionState.done)
                 const Center(child: CircularProgressIndicator())
@@ -165,8 +171,23 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
                     ),
                   ),
             ]),
-        )),
+        ))),
       ),
+    );
+  }
+
+  Future<void> showFundReceipt(Map<String,dynamic> entry) async {
+    await showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        child: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(entry['description'] as String,
+              style: Theme.of(context).textTheme.titleLarge),
+            ReceiptAttachmentPreview(fundEntryId: entry['id'] as String),
+          ]),
+      )),
     );
   }
 
@@ -209,6 +230,7 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> {
               trailing: Text(widget.currency + ' ' +
                 (purchase['amount'] as num).toStringAsFixed(2),
                 style: const TextStyle(fontWeight: FontWeight.w700)),
+              onTap: () => showFundReceipt(purchase),
             ),
             const SizedBox(height: 10),
           ],
@@ -269,6 +291,30 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   bool fundLoading = true;
   late String expenseCurrency;
   bool saving = false;
+  bool readingReceipt = false;
+  ReceiptDraft? receipt;
+  final receiptStorage = ReceiptStorage();
+
+  Future<void> chooseReceipt(ImageSource source) async {
+    if (saving || readingReceipt) return;
+    setState(() => readingReceipt = true);
+    try {
+      final picked = await ReceiptCapture.choose(source);
+      if (!mounted || picked == null) return;
+      setState(() {
+        receipt = picked;
+        // Never overwrite a user-entered value.
+        if (amount.text.trim().isEmpty && picked.suggestedTotal != null) {
+          amount.text = picked.suggestedTotal!;
+        }
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => readingReceipt = false);
+    }
+  }
 
   @override void initState() {
     super.initState();
@@ -314,8 +360,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
     setState(() => saving = true);
     try {
+      String createdId;
       if (payFromFund) {
-        await widget.api.addFundPurchase(
+        createdId = await widget.api.addFundPurchase(
           groupId: widget.groupId,
           title: title.text,
           amount: double.parse(amount.text.trim()),
@@ -324,16 +371,38 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               ? 1 : double.parse(exchangeRate.text.trim()),
         );
       } else {
-      await widget.api.add(
-        groupId: widget.groupId, title: title.text,
-        amount: double.parse(amount.text.trim()),
-        currency: expenseCurrency,
-        rateToSpending: expenseCurrency == widget.currency
-          ? 1 : double.parse(exchangeRate.text.trim()),
-        paidBy: payer!,
-        splitBetween: widget.members.map((m) => m['user_id'] as String)
-          .where(selected.contains).toList(),
-      );
+        createdId = await widget.api.add(
+          groupId: widget.groupId,
+          title: title.text,
+          amount: double.parse(amount.text.trim()),
+          currency: expenseCurrency,
+          rateToSpending: expenseCurrency == widget.currency
+              ? 1 : double.parse(exchangeRate.text.trim()),
+          paidBy: payer!,
+          splitBetween: widget.members
+              .map((m) => m['user_id'] as String)
+              .where(selected.contains).toList(),
+        );
+      }
+      // The expense is already committed. A failed receipt upload must not
+      // tempt users to create a duplicate charge by pressing Save again.
+      if (receipt != null) {
+        try {
+          await receiptStorage.upload(
+            groupId: widget.groupId,
+            jpeg: receipt!.jpeg,
+            expenseId: payFromFund ? null : createdId,
+            fundEntryId: payFromFund ? createdId : null,
+          );
+        } catch (_) {
+          if (mounted) {
+            final messenger = ScaffoldMessenger.of(context);
+            final message = l.receiptUploadFailed;
+            Navigator.pop(context, true);
+            messenger.showSnackBar(SnackBar(content: Text(message)));
+          }
+          return;
+        }
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -435,6 +504,43 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                 convertedAmount!.toStringAsFixed(2),
                 style: Theme.of(context).textTheme.bodyMedium),
           ],
+          const SizedBox(height: 22),
+          LuiFormLabel(l.receiptAttachment),
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (receipt != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(receipt!.jpeg,
+                      height: 180, fit: BoxFit.contain)),
+                  const SizedBox(height: 8),
+                  Text(l.receiptReviewHint,
+                    style: Theme.of(context).textTheme.bodySmall),
+                  TextButton.icon(
+                    onPressed: saving ? null :
+                      () => setState(() => receipt = null),
+                    icon: const Icon(Icons.close_rounded),
+                    label: Text(l.receiptRemove),
+                  ),
+                ],
+                if (readingReceipt)
+                  const Center(child: CircularProgressIndicator()),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  OutlinedButton.icon(
+                    onPressed: saving || readingReceipt ? null :
+                      () => chooseReceipt(ImageSource.camera),
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: Text(l.receiptCamera)),
+                  OutlinedButton.icon(
+                    onPressed: saving || readingReceipt ? null :
+                      () => chooseReceipt(ImageSource.gallery),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text(l.receiptGallery)),
+                ]),
+              ]),
+          )),
           const SizedBox(height: 22),
           LuiFormLabel(l.paidBy),
           if (!fundLoading && (fundAvailable ?? 0) > 0) ...[

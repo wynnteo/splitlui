@@ -168,5 +168,11 @@
   "repaymentReversalReasonHint": "例如：记录的金额有误",
   "repaymentReversalReasonInvalid": "请填写至少 3 个字的原因。",
   "repaymentUndoConfirm": "确认撤销",
-  "repaymentReversed": "已撤销 — 欠款已恢复"
+  "repaymentReversed": "已撤销 — 欠款已恢复",
+  "receiptAttachment": "收据照片（选填）",
+  "receiptCamera": "拍照",
+  "receiptGallery": "从相册选择",
+  "receiptRemove": "移除照片",
+  "receiptReviewHint": "识别金额仅供参考，保存前请确认金额和货币。",
+  "receiptUploadFailed": "开销已保存，但收据照片上传失败。请勿重复新增同一笔开销。"
 }
