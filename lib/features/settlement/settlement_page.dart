@@ -225,7 +225,7 @@ class _SettlementPageState extends State<SettlementPage> {
               children: [
                 Text(nameOf(recipientId), style: Theme.of(context)
                   .textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                Text(l.payNowReceivesFrom.replaceAll('{count}', '${lines.length}'),
+                Text(l.payNowReceivesFrom,
                   style: Theme.of(context).textTheme.bodySmall),
               ],
             )),
