@@ -52,6 +52,15 @@ class OfflineExpenseOutbox {
           CREATE INDEX offline_expenses_owner_group
           ON offline_expenses(user_id,group_id,created_at)
         ''');
+        await db.execute('''
+          CREATE TABLE offline_expense_cache(
+            user_id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            snapshot_json TEXT NOT NULL,
+            saved_at TEXT NOT NULL,
+            PRIMARY KEY(user_id, group_id)
+          )
+        ''');
       });
     return _database!;
     } catch (_) { _opening = null; rethrow; }
@@ -106,6 +115,25 @@ class OfflineExpenseOutbox {
       if (path != null) { try { await File(path).delete(); } catch (_) {} }
       rethrow;
     }
+  }
+
+  Future<void> cacheExpenses(
+    String groupId, List<Map<String,dynamic>> expenses) async {
+    final owner = _userId;
+    await (await database).insert('offline_expense_cache',{
+      'user_id':owner, 'group_id':groupId,
+      'snapshot_json':jsonEncode(expenses),
+      'saved_at':DateTime.now().toUtc().toIso8601String(),
+    },conflictAlgorithm:ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String,dynamic>>> cachedExpenses(String groupId) async {
+    final rows = await (await database).query('offline_expense_cache',
+      where:'user_id=? AND group_id=?',whereArgs:[_userId,groupId],
+      limit:1);
+    if(rows.isEmpty) return [];
+    final json=jsonDecode(rows.first['snapshot_json'] as String) as List;
+    return json.map((x)=>Map<String,dynamic>.from(x as Map)).toList();
   }
 
   Future<List<Map<String, Object?>>> pending(String groupId) async {
