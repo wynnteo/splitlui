@@ -628,7 +628,9 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
   bool loading = true;
 
   List<String> get currencies => {
-    'SGD', 'MYR', widget.spendingCurrency,
+    ...RepaymentPreferences.currencies,
+    widget.spendingCurrency,
+    widget.settlementCurrency,
   }.toList();
 
   @override

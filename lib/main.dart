@@ -566,16 +566,21 @@ class _SettingsState extends State<Settings> {
         ]),
         const SizedBox(height: 30),
         sectionHeader(l.repaymentDefaultCurrency, l.repaymentDefaultCurrencyHint),
-        choiceCard([
-          choiceTile(
-            title: 'SGD', icon: Icons.payments_outlined,
-            selected: preferredRepaymentCurrency == 'SGD',
-            onTap: () => choosePreferredCurrency('SGD')),
-          choiceTile(
-            title: 'MYR', icon: Icons.currency_exchange_outlined,
-            selected: preferredRepaymentCurrency == 'MYR',
-            onTap: () => choosePreferredCurrency('MYR')),
-        ]),
+        DropdownButtonFormField<String>(
+          value: preferredRepaymentCurrency,
+          isExpanded: true,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.currency_exchange_outlined),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14)),
+          ),
+          items: RepaymentPreferences.currencies.map((code) =>
+            DropdownMenuItem<String>(
+              value: code, child: Text(code))).toList(),
+          onChanged: (value) {
+            if (value != null) choosePreferredCurrency(value);
+          },
+        ),
         const SizedBox(height: 34),
         Center(child: Text(l.version,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
