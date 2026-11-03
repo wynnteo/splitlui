@@ -115,5 +115,20 @@
   "repaymentHistory": "Confirmed repayments",
   "repaymentNoRecords": "No repayments have been confirmed yet.",
   "repaymentReceivedRecorded": "Received and recorded",
-  "repaymentLimitations": "Only the recipient can confirm money received. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Mistaken confirmations cannot yet be reversed; check carefully."
+  "repaymentLimitations": "Only the recipient can confirm money received. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Mistaken confirmations cannot yet be reversed; check carefully.",
+  "payNowDetails": "My PayNow details",
+  "payNowPrivacyWarning": "Optional: save your PayNow-linked Singapore mobile number for this group. Every member of this group can view the number. Never enter OTPs, bank logins or account credentials.",
+  "payNowMobile": "PayNow mobile number",
+  "payNowMobileHint": "e.g. 91234567",
+  "payNowInvalid": "Enter a valid Singapore mobile (8 digits, starting with 8 or 9).",
+  "payNowRemoveHint": "Leave the field empty and save to remove your PayNow number from this group.",
+  "payNowRequestTo": "Request for",
+  "payNowRecipient": "Pay recipient",
+  "payNowAmountDue": "Outstanding amount",
+  "payNowVerifyRecipient": "Verify the PayNow recipient name in your banking app before paying.",
+  "payNowNoDetailsShared": "Ask the recipient for their preferred payment details.",
+  "payNowNotPayment": "This is a payment request only. SplitLui does not send money or confirm a transfer.",
+  "payNowCopied": "PayNow number copied",
+  "payNowCopyNumber": "Copy PayNow number",
+  "payNowShareRequest": "Share payment request"
 }
