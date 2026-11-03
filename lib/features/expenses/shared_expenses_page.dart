@@ -278,7 +278,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               : Text(l.saveExpense),
           ),
         ]),
-      )),
+      ),
     );
   }
 }
