@@ -22,7 +22,6 @@ flutter:
   uses-material-design: true
   assets:
     - config/supabase.json
-    - assets/icons/
 
 flutter_launcher_icons:
   android: true
