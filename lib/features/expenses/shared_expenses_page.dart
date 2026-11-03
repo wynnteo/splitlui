@@ -492,21 +492,20 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
               style:Theme.of(sheetContext).textTheme.headlineSmall
                 ?.copyWith(fontWeight:FontWeight.w700)),
             const SizedBox(height:12),
-            Text('$'+'{originalCurrency} '+'$'+'{originalAmount.toStringAsFixed(2)}',
+            Text(originalCurrency + ' ' + originalAmount.toStringAsFixed(2),
               style:Theme.of(sheetContext).textTheme.titleLarge),
             if(originalCurrency!=widget.currency) ...[
               const SizedBox(height:6),
-              Text('$'+'{l.groupEquivalent}: '+'$'+'{widget.currency} '+
+              Text(l.groupEquivalent + ': ' + widget.currency + ' ' +
                 groupAmount.toStringAsFixed(2)),
               const SizedBox(height:6),
-              Text('$'+'{l.expenseRateToGroup}: 1 '+
-                originalCurrency+' = '+
-                (entry['rate_to_spending'] as num?)?.toString() .toString()+
-                ' '+widget.currency),
+              Text(l.expenseRateToGroup + ': 1 ' + originalCurrency + ' = ' +
+                (entry['rate_to_spending']?.toString() ?? '1') +
+                ' ' + widget.currency),
             ],
             const SizedBox(height:10),
             if(entry['receipt_date'] != null)
-              Text('$'+'{l.expenseReceiptDate}: '+
+              Text(l.expenseReceiptDate + ': ' +
                 (entry['receipt_date'] as String)),
             const SizedBox(height:12),
             ReceiptAttachmentPreview(fundEntryId:entry['id'] as String),
