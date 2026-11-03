@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'fund_reconciliation.dart';
@@ -21,6 +22,8 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
   List<Map<String,dynamic>> targets=[],requests=[],refunds=[];
   bool busy=true;
   String? error;
+  String? _refundOperation;
+  String? _refundFingerprint;
 
   @override void initState() {super.initState();refresh();}
   @override void didUpdateWidget(covariant AdvancedFundSection old) {
@@ -108,15 +111,17 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
           ),
         );
   }
-  Future<void> perform(Future<dynamic> Function() action) async {
-    if(busy)return;
+  Future<bool> perform(Future<dynamic> Function() action) async {
+    if(busy)return false;
     setState(()=>busy=true);
     try {
       await action();await widget.onChanged();
       if(mounted)await refresh();
+      return true;
     } catch(e) {
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content:Text(e.toString())));
+      return false;
     } finally {if(mounted)setState(()=>busy=false);}
   }
   Future<void> setTarget(String id) async {
@@ -150,9 +155,16 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
             child:Text(l.fundRefundConfirm)),
         ]));
     if(yes!=true||!mounted)return;
-    await perform(()=>db.rpc('confirm_trip_fund_refund',params:{
+    final fingerprint=id+'|'+amount+'|'+note;
+    if(_refundFingerprint!=fingerprint || _refundOperation==null) {
+      _refundFingerprint=fingerprint;
+      _refundOperation=const Uuid().v4();
+    }
+    final done=await perform(()=>db.rpc('confirm_trip_fund_refund',params:{
       'p_group':widget.groupId,'p_member':id,
-      'p_amount':double.parse(amount),'p_note':note}));
+      'p_amount':double.parse(amount),'p_note':note,
+      'p_operation':_refundOperation}));
+    if(done){_refundOperation=null;_refundFingerprint=null;}
   }
   Future<void> cancel(String id) async {
     await perform(()=>db.rpc('cancel_trip_fund_topup',params:{
