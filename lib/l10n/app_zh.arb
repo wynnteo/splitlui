@@ -115,7 +115,7 @@
   "repaymentHistory": "已确认还款记录",
   "repaymentNoRecords": "目前还没有已确认的还款。",
   "repaymentReceivedRecorded": "已收到并记录",
-  "repaymentLimitations": "只有收款人才可以确认已收到款项。还款会减少个人应收应付，不会更改共同基金余额。本功能不会自动转账或向银行核实。错误确认目前不能撤销，请核对后再记录。",
+  "repaymentLimitations": "只有收款人可确认或撤销还款记录。已确认还款会减少个人欠款，不影响共同基金。系统不会自动转账或向银行核实。撤销会恢复欠款，并保留审计记录。",
   "payNowDetails": "我的 PayNow 收款资料",
   "payNowPrivacyWarning": "可选择为此群组填写绑定 PayNow 的新加坡手机号码。群组内所有成员都可以看到，请勿填写 OTP、银行密码或账户凭证。",
   "payNowMobile": "PayNow 手机号码",
@@ -161,5 +161,12 @@
   "repaymentRateHint": "请记录实际收到的货币与金额。如使用其他货币，请输入双方约定的汇率；不会自动使用实时汇率。",
   "repaymentLedgerEquivalent": "抵扣欠款的金额",
   "repaymentOutstanding": "尚欠金额",
-  "repaymentExceedsOutstanding": "换算后的还款超过尚欠金额，请减少还款金额。"
+  "repaymentExceedsOutstanding": "换算后的还款超过尚欠金额，请减少还款金额。",
+  "repaymentUndo": "撤销收款确认",
+  "repaymentUndoWarning": "仅在误记录收款时撤销。系统会恢复欠款并保留撤销记录；此操作不会撤回任何银行转账。",
+  "repaymentReversalReason": "撤销原因",
+  "repaymentReversalReasonHint": "例如：记录的金额有误",
+  "repaymentReversalReasonInvalid": "请填写至少 3 个字的原因。",
+  "repaymentUndoConfirm": "确认撤销",
+  "repaymentReversed": "已撤销 — 欠款已恢复"
 }

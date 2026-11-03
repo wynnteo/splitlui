@@ -75,7 +75,7 @@ class _SettlementPageState extends State<SettlementPage> {
       final shares = await readAll('trip_expense_shares',
           'expense_id,user_id,share_spending');
       final receiptRows = await readAll('trip_repayments',
-        'id,from_user_id,to_user_id,amount_spending,paid_amount,paid_currency,paid_rate_to_spending,note,created_at');
+        'id,from_user_id,to_user_id,amount_spending,paid_amount,paid_currency,paid_rate_to_spending,note,created_at,reversed_at,reversal_reason');
       final payNowRows = await payNowApi.getAll(widget.groupId);
       final summary = ExpenseCurrencySummary.calculate(
         expenses: expenses,
@@ -87,7 +87,8 @@ class _SettlementPageState extends State<SettlementPage> {
         memberIds: widget.members.map((m) => m['user_id'] as String).toList(),
         expenses: expenses,
         shares: shares,
-        repayments: receiptRows,
+        repayments: receiptRows.where(
+          (row) => row['reversed_at'] == null).toList(),
       );
       if (mounted) setState(() {
         result = calculated;
@@ -121,6 +122,38 @@ class _SettlementPageState extends State<SettlementPage> {
       ),
     ));
     if (mounted && recorded == true) await refresh();
+  }
+
+  Future<void> reverseReceipt(Map<String,dynamic> receipt) async {
+    final l = AppLocalizations.of(context)!;
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _RepaymentReversalSheet(),
+    );
+    if (reason == null || !mounted) return;
+    setState(() => busy = true);
+    try {
+      await Supabase.instance.client.rpc('reverse_trip_repayment', params: {
+        'p_group': widget.groupId,
+        'p_receipt': receipt['id'],
+        'p_reason': reason,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.repaymentReversed)));
+        await refresh();
+      }
+    } catch(e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   Future<void> editPayNow() async {
@@ -471,22 +504,58 @@ class _SettlementPageState extends State<SettlementPage> {
               Text(l.repaymentNoRecords,
                 style: Theme.of(context).textTheme.bodySmall),
             for (final receipt in repayments) ...[
-              LuiFeatureTile(
-                icon: Icons.task_alt_rounded,
-                title: nameOf(receipt['from_user_id'] as String) +
-                    ' → ' + nameOf(receipt['to_user_id'] as String),
-                subtitle: l.repaymentReceivedRecorded +
-                  ((receipt['note'] as String).isEmpty
-                    ? '' : ' · ' + (receipt['note'] as String)) +
-                  ((receipt['paid_currency'] as String) != widget.spendingCurrency
-                    ? '\n' + l.repaymentLedgerEquivalent + ': ' +
-                      widget.spendingCurrency + ' ' +
-                      (receipt['amount_spending'] as num).toStringAsFixed(2)
-                    : ''),
-                trailing: Text((receipt['paid_currency'] as String) + ' ' +
-                  (receipt['paid_amount'] as num).toStringAsFixed(2),
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
-              ),
+              Card(child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Icon(receipt['reversed_at'] == null
+                        ? Icons.task_alt_rounded
+                        : Icons.undo_rounded,
+                        color: receipt['reversed_at'] == null
+                          ? colors.primary : colors.onSurfaceVariant),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(
+                        nameOf(receipt['from_user_id'] as String) +
+                        ' → ' + nameOf(receipt['to_user_id'] as String),
+                        style: const TextStyle(fontWeight: FontWeight.w600))),
+                      Text((receipt['paid_currency'] as String) + ' ' +
+                        (receipt['paid_amount'] as num).toStringAsFixed(2),
+                        style: TextStyle(
+                          decoration: receipt['reversed_at'] != null
+                            ? TextDecoration.lineThrough : null,
+                          fontWeight: FontWeight.w700)),
+                    ]),
+                    const SizedBox(height: 6),
+                    Text(receipt['reversed_at'] == null
+                      ? l.repaymentReceivedRecorded
+                      : l.repaymentReversed,
+                      style: Theme.of(context).textTheme.bodySmall),
+                    if ((receipt['note'] as String).isNotEmpty)
+                      Text(receipt['note'] as String,
+                        style: Theme.of(context).textTheme.bodySmall),
+                    if ((receipt['paid_currency'] as String) !=
+                        widget.spendingCurrency)
+                      Text(l.repaymentLedgerEquivalent + ': ' +
+                        widget.spendingCurrency + ' ' +
+                        (receipt['amount_spending'] as num).toStringAsFixed(2),
+                        style: Theme.of(context).textTheme.bodySmall),
+                    if (receipt['reversed_at'] != null)
+                      Text(l.repaymentReversalReason + ': ' +
+                        (receipt['reversal_reason'] as String? ?? ''),
+                        style: Theme.of(context).textTheme.bodySmall),
+                    if (receipt['reversed_at'] == null &&
+                        receipt['to_user_id'] ==
+                          Supabase.instance.client.auth.currentUser?.id)
+                      Align(alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: busy ? null :
+                            () => reverseReceipt(receipt),
+                          icon: const Icon(Icons.undo_rounded, size: 18),
+                          label: Text(l.repaymentUndo),
+                        )),
+                  ]),
+              )),
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 22),
@@ -751,6 +820,69 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
           ],
         ),
       )),
+    );
+  }
+}
+
+
+class _RepaymentReversalSheet extends StatefulWidget {
+  @override State<_RepaymentReversalSheet> createState() =>
+      _RepaymentReversalSheetState();
+}
+
+class _RepaymentReversalSheetState extends State<_RepaymentReversalSheet> {
+  final reason = TextEditingController();
+  final form = GlobalKey<FormState>();
+
+  @override void dispose() {
+    reason.dispose();
+    super.dispose();
+  }
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        child: Form(
+          key: form,
+          child: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(l.repaymentUndo,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Text(l.repaymentUndoWarning,
+                style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: reason,
+                autofocus: true,
+                maxLength: 120,
+                decoration: InputDecoration(
+                  labelText: l.repaymentReversalReason,
+                  hintText: l.repaymentReversalReasonHint),
+                validator: (value) {
+                  final text = (value ?? '').trim();
+                  return text.length < 3 ? l.repaymentReversalReasonInvalid
+                    : null;
+                },
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () {
+                  if (form.currentState?.validate() == true) {
+                    Navigator.pop(context, reason.text.trim());
+                  }
+                },
+                child: Text(l.repaymentUndoConfirm)),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l.cloudCancel)),
+            ]),
+        ),
+      ),
     );
   }
 }
