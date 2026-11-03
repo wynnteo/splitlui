@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,7 @@ import '../expenses/shared_expenses_page.dart';
 import '../fund/common_fund_page.dart';
 import '../settlement/settlement_page.dart';
 import '../../ui/lui_style.dart';
+import 'group_invite_message.dart';
 
 class SharedGroupApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -54,7 +56,7 @@ class SharedGroupApi {
   Future<void> join(String code, String nickname) async {
     await auth();
     await db.rpc('join_trip_group', params: {
-      'p_token': code.trim().toLowerCase(), 'p_nickname': nickname,
+      'p_token': GroupInviteMessage.codeFromPaste(code) ?? code.trim().toLowerCase(), 'p_nickname': nickname,
     });
   }
 
@@ -123,7 +125,7 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         initial: initial,
         cancelLabel: l.cloudCancel,
         confirmLabel: l.cloudContinue,
-        maxLength: hint == l.cloudNicknameHint ? 60 : 80,
+        maxLength: hint == l.cloudNicknameHint ? 60 : (hint == l.cloudInviteHint ? 2000 : 80),
       ),
     );
   }
@@ -172,7 +174,14 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
     final name = await getNickname();
     if (!mounted || name == null) return;
     final code = await askText(l.cloudJoin, l.cloudInviteHint);
-    if (code != null) await execute(() => api.join(code, name));
+    if (code == null) return;
+    final extracted = GroupInviteMessage.codeFromPaste(code);
+    if (extracted == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.inviteInvalidCode)));
+      return;
+    }
+    await execute(() => api.join(extracted, name));
   }
 
   Future<void> migrateLegacy(Group group) async {
@@ -338,6 +347,25 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
     }
   }
 
+  Future<void> shareInvite() async {
+    if (invite == null) return;
+    final l = AppLocalizations.of(context)!;
+    final message = GroupInviteMessage.format(
+      groupName: group['name'] as String,
+      inviteCode: invite!,
+      heading: l.inviteShareHeading,
+      instruction: l.inviteShareInstructions,
+      codeLabel: l.cloudInviteCode,
+      installLabel: l.inviteInstallApp,
+    );
+    try {
+      await SharePlus.instance.share(ShareParams(text: message));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())));
+    }
+  }
+
   Future<void> resetCode() async {
     try {
       final token = await widget.api.rotate(group['id'] as String);
@@ -436,6 +464,9 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
             const SizedBox(height: 12),
             SelectableText(invite!, style: const TextStyle(
               fontFamily: 'monospace', fontSize: 12)),
+            const SizedBox(height: 10),
+            Text(l.inviteShareHint,
+              style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 18),
             SizedBox(width: double.infinity,
               child: FilledButton.icon(
@@ -446,6 +477,13 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
                 },
                 icon: const Icon(Icons.copy_outlined),
                 label: Text(l.cloudCopyInvite),
+              )),
+            const SizedBox(height: 10),
+            SizedBox(width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: shareInvite,
+                icon: const Icon(Icons.share_outlined),
+                label: Text(l.inviteShareButton),
               )),
             if (owner) TextButton.icon(
               onPressed: resetCode,
