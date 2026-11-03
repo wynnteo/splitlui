@@ -78,5 +78,9 @@
   "fundContributionHint": "e.g. Cash collected",
   "fundContributor": "Contributed by",
   "fundRecordActual": "Only record money actually received, not an amount someone promised to pay.",
-  "fundNoDoubleSplit": "This payment uses common funds and will not create an individual split expense."
+  "fundNoDoubleSplit": "This payment uses common funds and will not create an individual split expense.",
+  "thaiBaht": "THB · Thai Baht (฿)",
+  "localOnlyFeatures": "This group is saved only on this device. Expenses, Common Fund and member management work in Shared Groups, where everyone can join.",
+  "openSharedGroups": "Open shared groups",
+  "createLocalGroup": "Create local group"
 }
