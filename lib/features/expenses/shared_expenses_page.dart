@@ -269,6 +269,30 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     }
   }
 
+  Future<void> showCachedExpense(Map<String,dynamic> expense) async {
+    final l = AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context:context, showDragHandle:true, useSafeArea:true,
+      builder:(sheetContext)=>Padding(
+        padding:const EdgeInsets.fromLTRB(20,8,20,30),
+        child:Column(mainAxisSize:MainAxisSize.min,
+          crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(expense['title'] as String,
+            style:Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height:12),
+          Text('${expense['currency']} ${(expense['amount'] as num).toStringAsFixed(2)}',
+            style:Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height:8),
+          Text(l.paidBy + ': ' +
+            memberName(expense['paid_by'] as String?)),
+          const SizedBox(height:12),
+          Text(l.offlineReadOnlyDetails,
+            style:Theme.of(context).textTheme.bodySmall),
+        ]),
+      ),
+    );
+  }
+
   Future<void> showShares(Map<String, dynamic> expense) async {
     final l = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
@@ -473,7 +497,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                       style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
-              onTap: () => showShares(expense),
+              onTap: () => showingOfflineSnapshot
+                ? showCachedExpense(expense) : showShares(expense),
             ),
             const SizedBox(height: 10),
           ],
