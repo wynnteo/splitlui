@@ -83,28 +83,18 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
     }
   }
 
-  Future<String?> askText(String title, String hint, {String initial = ''}) async {
-    final controller = TextEditingController(text: initial);
+  Future<String?> askText(String title, String hint, {String initial = ''}) {
     final l = AppLocalizations.of(context)!;
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
-      builder: (dialog) => AlertDialog(
-        title: Text(title),
-        content: TextField(controller: controller, maxLength: 80,
-          decoration: InputDecoration(hintText: hint)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialog),
-            child: Text(l.cloudCancel)),
-          FilledButton(onPressed: () {
-            if (controller.text.trim().isNotEmpty) {
-              Navigator.pop(dialog, controller.text.trim());
-            }
-          }, child: Text(l.cloudContinue)),
-        ],
+      builder: (_) => _SharedGroupTextDialog(
+        title: title,
+        hint: hint,
+        initial: initial,
+        cancelLabel: l.cloudCancel,
+        confirmLabel: l.cloudContinue,
       ),
     );
-    controller.dispose();
-    return result;
   }
 
   Future<String?> getNickname() async {
@@ -339,4 +329,63 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
       ]),
     );
   }
+}
+
+
+/// Owns the input controller for the entire dialog route lifecycle.
+/// Disposing after showDialog returns is too early during route animation.
+class _SharedGroupTextDialog extends StatefulWidget {
+  const _SharedGroupTextDialog({
+    required this.title, required this.hint, required this.initial,
+    required this.cancelLabel, required this.confirmLabel,
+  });
+  final String title, hint, initial, cancelLabel, confirmLabel;
+
+  @override
+  State<_SharedGroupTextDialog> createState() => _SharedGroupTextDialogState();
+}
+
+class _SharedGroupTextDialogState extends State<_SharedGroupTextDialog> {
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController(text: widget.initial);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    content: TextField(
+      controller: controller,
+      maxLength: 80,
+      autofocus: true,
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(hintText: widget.hint),
+      onSubmitted: (value) {
+        final trimmed = value.trim();
+        if (trimmed.isNotEmpty) Navigator.pop(context, trimmed);
+      },
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(widget.cancelLabel),
+      ),
+      FilledButton(
+        onPressed: () {
+          final value = controller.text.trim();
+          if (value.isNotEmpty) Navigator.pop(context, value);
+        },
+        child: Text(widget.confirmLabel),
+      ),
+    ],
+  );
 }
