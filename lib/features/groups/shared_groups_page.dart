@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart' show CreateGroup, Group;
+import '../../ui/lui_style.dart';
 
 class SharedGroupApi {
   final SupabaseClient db = Supabase.instance.client;
@@ -158,48 +159,54 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         IconButton(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh),
           tooltip: l.cloudRefresh),
       ]),
-      body: ListView(padding: const EdgeInsets.all(20), children: [
-        Container(padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFFFF808C), Color(0xFFFFC37A)]),
-            borderRadius: BorderRadius.circular(28)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('👯 ✈️ 🎉', style: TextStyle(fontSize: 38)),
-            const SizedBox(height: 12),
-            Text(l.cloudTitle, style: const TextStyle(
-              color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-            Text(l.cloudSubtitle, style: const TextStyle(color: Colors.white)),
-          ]),
+      body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+        Text(l.cloudTitle,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w700, letterSpacing: -0.7)),
+        const SizedBox(height: 8),
+        Text(l.cloudSubtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: busy ? null : create,
+          icon: const Icon(Icons.add),
+          label: Text(l.newGroup),
         ),
-        const SizedBox(height: 18),
-        Row(children: [
-          Expanded(child: FilledButton.icon(onPressed: busy ? null : create,
-            icon: const Icon(Icons.add), label: Text(l.newGroup))),
-          const SizedBox(width: 10),
-          Expanded(child: OutlinedButton.icon(onPressed: busy ? null : join,
-            icon: const Icon(Icons.group_add), label: Text(l.cloudJoin))),
-        ]),
-        const SizedBox(height: 18),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: busy ? null : join,
+          icon: const Icon(Icons.group_add_outlined),
+          label: Text(l.cloudJoin),
+        ),
+        const SizedBox(height: 26),
         if (busy) const Center(child: CircularProgressIndicator()),
-        if (error != null) Text(error!,
-          style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        if (error != null) Card(child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Text(error!, style: TextStyle(
+            color: Theme.of(context).colorScheme.error)))),
         if (!busy && error == null && groups.isEmpty)
-          Card(child: Padding(padding: const EdgeInsets.all(22),
-            child: Text(l.cloudEmpty))),
-        for (final g in groups) Card(child: ListTile(
-          contentPadding: const EdgeInsets.all(18),
-          leading: Text(g['is_travel'] == true ? '🌴' : '🍕',
-            style: const TextStyle(fontSize: 30)),
-          title: Text(g['name'] as String,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text((g['spending_currency'] as String) + ' • ' +
-            (g['settlement_currency'] as String)),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => SharedGroupDetail(api: api, group: g))),
-        )),
+          Card(child: Padding(padding: const EdgeInsets.all(24),
+            child: Column(children: [
+              Icon(Icons.groups_2_outlined, size: 36,
+                color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 12),
+              Text(l.cloudEmpty, textAlign: TextAlign.center),
+            ]))),
+        for (final g in groups) ...[
+          LuiFeatureTile(
+            icon: g['is_travel'] == true
+              ? Icons.flight_takeoff_outlined : Icons.restaurant_outlined,
+            title: g['name'] as String,
+            subtitle: (g['spending_currency'] as String) + ' / ' +
+              (g['settlement_currency'] as String),
+            onTap: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => SharedGroupDetail(api: api, group: g))),
+          ),
+          const SizedBox(height: 10),
+        ],
         const SizedBox(height: 20),
-        Text(l.cloudIdentityWarning, style: Theme.of(context).textTheme.bodySmall),
+        Text(l.cloudIdentityWarning,
+          style: Theme.of(context).textTheme.bodySmall),
       ]),
     );
   }
@@ -251,39 +258,55 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
       appBar: AppBar(title: Text(widget.group['name'] as String),
         actions: [IconButton(onPressed: refresh, icon: const Icon(Icons.refresh),
           tooltip: l.cloudRefresh)]),
-      body: ListView(padding: const EdgeInsets.all(20), children: [
-        const Center(child: Text('🌈 🧳', style: TextStyle(fontSize: 48))),
-        const SizedBox(height: 16),
+      body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+        Text(widget.group['name'] as String,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w700, letterSpacing: -0.7)),
+        const SizedBox(height: 24),
         if (busy) const Center(child: CircularProgressIndicator()),
-        if (error != null) Text(error!),
+        if (error != null) Text(error!,
+          style: TextStyle(color: Theme.of(context).colorScheme.error)),
         if (invite != null) Card(child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.cloudInviteCode, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 10),
-            SelectableText(invite!, style: const TextStyle(fontFamily: 'monospace')),
+            Text(l.cloudInviteCode,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: invite!));
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l.cloudCopied)));
-              },
-              icon: const Icon(Icons.copy), label: Text(l.cloudCopyInvite)),
+            SelectableText(invite!, style: const TextStyle(
+              fontFamily: 'monospace', fontSize: 12)),
+            const SizedBox(height: 18),
+            SizedBox(width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: invite!));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l.cloudCopied)));
+                },
+                icon: const Icon(Icons.copy_outlined),
+                label: Text(l.cloudCopyInvite),
+              )),
             if (owner) TextButton.icon(
-              onPressed: resetCode, icon: const Icon(Icons.lock_reset),
+              onPressed: resetCode,
+              icon: const Icon(Icons.lock_reset_outlined),
               label: Text(l.cloudResetInvite)),
           ]),
         )),
-        const SizedBox(height: 20),
-        Text(l.members, style: Theme.of(context).textTheme.titleLarge),
-        for (final m in members) Card(child: ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(m['nickname'] as String),
-          trailing: m['role'] == 'owner' ? Text(l.cloudOwner) : null,
-        )),
-        const SizedBox(height: 20),
-        Text(l.cloudExpenseNext, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 28),
+        LuiSectionHeading(title: l.members),
+        const SizedBox(height: 12),
+        for (final m in members) ...[
+          LuiFeatureTile(
+            icon: Icons.person_outline,
+            title: m['nickname'] as String,
+            subtitle: m['role'] == 'owner' ? l.cloudOwner : null,
+            trailing: const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 10),
+        ],
+        const SizedBox(height: 16),
+        Text(l.cloudExpenseNext,
+          style: Theme.of(context).textTheme.bodySmall),
       ]),
     );
   }
