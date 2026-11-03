@@ -8,7 +8,7 @@ A colorful Flutter app for travel groups, shared funds and group expense splitti
 
 - Playful home screen and responsive rounded-card styling.
 - Light, dark and system appearance.
-- English, Simplified Chinese, Bahasa Melayu and Japanese.
+- English and Simplified Chinese via Flutter's generated `gen-l10n` ARB files (`lib/l10n/app_en.arb` and `app_zh.arb`).
 - Saved theme and language settings.
 - Create Travel and Hangout groups, with settlement/spending currency, custom agreed exchange rate and optional spending budget.
 - Groups persist locally on the device via shared_preferences.
@@ -24,6 +24,8 @@ git clone https://github.com/wynnteo/splitlui.git
 cd splitlui
 flutter create --project-name splitlui --org dev.cloudfullstack .
 flutter pub get
+flutter gen-l10n
+flutter analyze
 flutter run
 ```
 
