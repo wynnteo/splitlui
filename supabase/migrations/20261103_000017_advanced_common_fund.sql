@@ -142,7 +142,7 @@ grant execute on function public.cancel_trip_fund_topup(uuid,uuid)
 -- Lock the existing fund account row to serialize concurrent debit operations.
 -- Prevent refunding more than the member's actual net contributions.
 create or replace function public.confirm_trip_fund_refund(
-  p_group uuid,p_member uuid,p_amount numeric,p_note text
+  p_group uuid,p_member uuid,p_amount numeric,p_note text,p_operation uuid
 ) returns uuid language plpgsql security definer
 set search_path = '' as $$
 declare
