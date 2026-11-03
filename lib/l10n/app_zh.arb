@@ -1,7 +1,7 @@
 {
   "@@locale": "zh",
-  "hello": "一起玩，轻松分账！",
-  "subtitle": "开心出游，不为钱烦恼。",
+  "hello": "一起记录美好时光",
+  "subtitle": "一起规划、分账和结算，简单一点。",
   "groups": "我的群组",
   "newGroup": "创建群组",
   "empty": "下一趟旅程从这里开始！",
@@ -27,9 +27,9 @@
   "soon": "下一个阶段推出！",
   "local": "目前只保存在这台设备，邀请和实时同步尚未开放。",
   "rateHint": "例如：1 SGD = 115 JPY → 输入 115",
-  "version": "SplitLui 0.1.0 🌈",
+  "version": "SplitLui 0.1.0",
   "cloudGroups": "多人共享群组",
-  "cloudTitle": "好朋友，一起玩！🎉",
+  "cloudTitle": "多人共享群组",
   "cloudSubtitle": "邀请朋友加入，一起规划旅程和开销。",
   "cloudJoin": "加入群组",
   "cloudRefresh": "刷新",
@@ -46,5 +46,6 @@
   "cloudEmpty": "还没有共享群组，创建一个或加入朋友的群组吧！",
   "cloudIdentityWarning": "访客账号绑定当前设备。清除 App 数据可能失去群组访问权限，账号恢复将在之后加入。",
   "cloudExpenseNext": "共同记账、公款管理和自动结算将在下一阶段加入。",
-  "cloudNotConfigured": "请先配置 Supabase 才能使用共享群组。"
+  "cloudNotConfigured": "请先配置 Supabase 才能使用共享群组。",
+  "nameHint": "例如：东京周末游"
 }

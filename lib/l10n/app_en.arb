@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
-  "hello": "Good times. Fair shares!",
-  "subtitle": "Make memories, not money drama.",
+  "hello": "Your moments, together.",
+  "subtitle": "Plan, share and settle with ease.",
   "groups": "Your groups",
   "newGroup": "Create group",
   "empty": "Your next adventure starts here!",
@@ -27,9 +27,9 @@
   "soon": "Coming in the next feature!",
   "local": "Saved on this device. Group invitations and sync are not available yet.",
   "rateHint": "Example: 1 SGD = 115 JPY → enter 115",
-  "version": "SplitLui 0.1.0 🌈",
+  "version": "SplitLui 0.1.0",
   "cloudGroups": "Shared groups",
-  "cloudTitle": "Better together! 🎉",
+  "cloudTitle": "Shared groups",
   "cloudSubtitle": "Invite friends and plan your adventures together.",
   "cloudJoin": "Join group",
   "cloudRefresh": "Refresh",
@@ -46,5 +46,6 @@
   "cloudEmpty": "No shared groups yet. Start one or join a friend's group!",
   "cloudIdentityWarning": "Guest accounts are device-bound. Clearing app data may lose access. Account recovery will be added later.",
   "cloudExpenseNext": "Expenses, common funds and automatic settlements are coming next.",
-  "cloudNotConfigured": "Shared groups need Supabase configuration before they can be used."
+  "cloudNotConfigured": "Shared groups need Supabase configuration before they can be used.",
+  "nameHint": "e.g. Weekend in Tokyo"
 }

@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/groups/shared_groups_page.dart';
+import 'ui/lui_style.dart';
 import 'l10n/generated/app_localizations.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -123,28 +124,12 @@ class _SplitLuiState extends State<SplitLui> {
     setState(() => groups = updated);
   }
 
-  ThemeData design(Brightness brightness) {
-    final dark = brightness == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFFFF717A), brightness: brightness,
-      surface: dark ? const Color(0xFF252432) : const Color(0xFFFFFDFB));
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF171621) : const Color(0xFFFFF6F0),
-      appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent),
-      cardTheme: CardThemeData(elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
-      inputDecorationTheme: InputDecorationTheme(filled: true,
-        border: OutlineInputBorder(borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(18))),
-    );
-  }
 
   @override Widget build(BuildContext context) => MaterialApp(
     onGenerateTitle: (context) { _l10n = AppLocalizations.of(context)!; return 'SplitLui'; },
     debugShowCheckedModeBanner: false,
-    theme: design(Brightness.light), darkTheme: design(Brightness.dark), themeMode: mode,
+    theme: LuiStyle.theme(Brightness.light),
+    darkTheme: LuiStyle.theme(Brightness.dark), themeMode: mode,
     locale: Locale(language),
     supportedLocales: AppLocalizations.supportedLocales,
     localizationsDelegates: const [
@@ -153,80 +138,82 @@ class _SplitLuiState extends State<SplitLui> {
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: Builder(builder: (context) => Scaffold(
-      appBar: AppBar(
-        title: const Text('SplitLui 🌈', style: TextStyle(fontWeight: FontWeight.w900)),
-        actions: [IconButton(
-          tooltip: t('settings'), icon: const Icon(Icons.tune_rounded),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => Settings(t: t, language: language, mode: mode,
-              onLanguage: setLanguage, onMode: setMode))),
-        )],
-      ),
-      body: !loaded ? const Center(child: CircularProgressIndicator()) : ListView(
-        padding: const EdgeInsets.all(20), children: [
-          Container(padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(30),
-              gradient: const LinearGradient(colors: [Color(0xFFFF797F), Color(0xFFFFB676)])),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('🧳 ✈️ 🍜', style: TextStyle(fontSize: 34)),
-              const SizedBox(height: 20),
-              Text(t('hello'), style: const TextStyle(color: Colors.white,
-                fontSize: 27, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text(t('subtitle'), style: const TextStyle(color: Colors.white)),
-            ]),
-          ),
-          const SizedBox(height: 18),
-          Card(child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(AppLocalizations.of(context)!.cloudTitle,
-                style: Theme.of(context).textTheme.titleMedium),
+    home: Builder(builder: (context) {
+      final l = AppLocalizations.of(context)!;
+      final colors = Theme.of(context).colorScheme;
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('SplitLui'),
+          actions: [
+            IconButton(
+              tooltip: l.settings,
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => Settings(t: t, language: language, mode: mode,
+                  onLanguage: setLanguage, onMode: setMode))),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: !loaded
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+              Text(l.hello, style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700, letterSpacing: -0.8)),
               const SizedBox(height: 6),
-              Text(AppLocalizations.of(context)!.cloudSubtitle),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: cloudEnabled ? () => Navigator.push(context,
+              Text(l.subtitle, style: TextStyle(color: colors.onSurfaceVariant)),
+              const SizedBox(height: 28),
+              LuiFeatureTile(
+                icon: Icons.groups_2_outlined,
+                title: l.cloudGroups,
+                subtitle: cloudEnabled ? l.cloudSubtitle : l.cloudNotConfigured,
+                trailing: Icon(Icons.arrow_outward_rounded,
+                  size: 20, color: colors.primary),
+                onTap: cloudEnabled ? () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const SharedGroupsPage())) : null,
-                icon: const Icon(Icons.group_add_outlined),
-                label: Text(AppLocalizations.of(context)!.cloudGroups),
               ),
-              if (!cloudEnabled) Text(AppLocalizations.of(context)!.cloudNotConfigured,
-                style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 28),
+              LuiSectionHeading(
+                title: l.groups,
+                trailing: TextButton.icon(
+                  onPressed: () => addGroup(context),
+                  icon: const Icon(Icons.add, size: 20),
+                  label: Text(l.newGroup),
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (groups.isEmpty) Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 30),
+                  child: Column(children: [
+                    Icon(Icons.folder_open_rounded, size: 38, color: colors.primary),
+                    const SizedBox(height: 12),
+                    Text(l.empty, textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: () => addGroup(context),
+                      icon: const Icon(Icons.add),
+                      label: Text(l.newGroup),
+                    ),
+                  ]),
+                ),
+              ),
+              for (final group in groups) ...[
+                LuiFeatureTile(
+                  icon: group.travel ? Icons.flight_takeoff_outlined : Icons.restaurant_outlined,
+                  title: group.name,
+                  subtitle: group.spending + ' / ' + group.settlement,
+                  onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => GroupPage(group: group, t: t))),
+                ),
+                const SizedBox(height: 10),
+              ],
+              const SizedBox(height: 20),
+              Text(l.local, style: Theme.of(context).textTheme.bodySmall),
             ]),
-          )),
-          const SizedBox(height: 24),
-          Row(children: [
-            Expanded(child: Text(t('groups'),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
-            IconButton.filledTonal(onPressed: () => addGroup(context),
-              icon: const Icon(Icons.add_rounded)),
-          ]),
-          const SizedBox(height: 8),
-          if (groups.isEmpty) Card(child: Padding(padding: const EdgeInsets.all(28),
-            child: Column(children: [
-              const Text('🎒', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12), Text(t('empty'), textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(onPressed: () => addGroup(context),
-                icon: const Icon(Icons.add), label: Text(t('new'))),
-            ]))),
-          for (final group in groups) Card(child: ListTile(
-            contentPadding: const EdgeInsets.all(18),
-            leading: Text(group.travel ? '🌴' : '🍕', style: const TextStyle(fontSize: 30)),
-            title: Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(group.spending + ' • ' + group.settlement),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => GroupPage(group: group, t: t))),
-          )),
-          const SizedBox(height: 16),
-          Text(t('local'), textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    )),
+      );
+    }),
   );
 }
 
@@ -248,61 +235,108 @@ class _CreateGroupState extends State<CreateGroup> {
   }
   @override Widget build(BuildContext context) {
     final t = widget.t;
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(t('new'))),
-      body: Form(key: form, child: ListView(padding: const EdgeInsets.all(20), children: [
-        const Center(child: Text('🧳 🎉', style: TextStyle(fontSize: 56))),
-        const SizedBox(height: 16),
-        SegmentedButton<bool>(
-          segments: [ButtonSegment(value: true, label: Text(t('travel'))),
-            ButtonSegment(value: false, label: Text(t('hangout')))],
-          selected: {travel}, onSelectionChanged: (v) => setState(() => travel = v.first)),
-        const SizedBox(height: 18),
-        TextFormField(controller: name, decoration: InputDecoration(labelText: t('name')),
-          validator: (v) => (v ?? '').trim().isEmpty ? t('required') : null),
-        const SizedBox(height: 14),
-        DropdownButtonFormField<String>(value: spending,
-          decoration: InputDecoration(labelText: t('spending')),
-          items: currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: (v) { if (v != null) setState(() {
-            spending = v;
-            if (spending == settlement) rate.text = '1';
-          }); }),
-        const SizedBox(height: 14),
-        DropdownButtonFormField<String>(value: settlement,
-          decoration: InputDecoration(labelText: t('settlement')),
-          items: currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: (v) { if (v != null) setState(() {
-            settlement = v;
-            if (spending == settlement) rate.text = '1';
-          }); }),
-        const SizedBox(height: 14),
-        TextFormField(controller: rate,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: t('rate'),
-            helperText: AppLocalizations.of(context)!.rateHint),
-          validator: (v) {
-            final n = double.tryParse(v ?? '');
-            return n == null || !n.isFinite || n <= 0 ? t('invalid') : null;
-          }),
-        const SizedBox(height: 14),
-        TextFormField(controller: budget,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: t('budget')),
-          validator: (v) {
-            if ((v ?? '').trim().isEmpty) return null;
-            final n = double.tryParse(v!);
-            return n == null || !n.isFinite || n < 0 ? t('invalid') : null;
-          }),
-        const SizedBox(height: 24),
-        FilledButton(onPressed: () {
-          if (!form.currentState!.validate()) return;
-          Navigator.pop(context, Group(
-            DateTime.now().microsecondsSinceEpoch.toString(), name.text.trim(),
-            travel, spending, settlement, double.parse(rate.text),
-            budget.text.trim().isEmpty ? null : double.parse(budget.text)));
-        }, child: Text(t('create'))),
-      ])),
+      body: Form(
+        key: form,
+        child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
+          Text(t('new'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w700, letterSpacing: -0.8)),
+          const SizedBox(height: 6),
+          Text(l.cloudSubtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 26),
+          LuiFormLabel(t('travel') + ' / ' + t('hangout')),
+          SegmentedButton<bool>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: true, label: Text(t('travel')),
+                icon: const Icon(Icons.flight_outlined, size: 18)),
+              ButtonSegment(value: false, label: Text(t('hangout')),
+                icon: const Icon(Icons.groups_outlined, size: 18)),
+            ],
+            selected: {travel},
+            onSelectionChanged: (v) => setState(() => travel = v.first)),
+          const SizedBox(height: 22),
+          LuiFormLabel(t('name')),
+          TextFormField(
+            controller: name,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(hintText: l.nameHint),
+            validator: (v) => (v ?? '').trim().isEmpty ? t('required') : null),
+          const SizedBox(height: 22),
+          LuiFormLabel(t('spending')),
+          DropdownButtonFormField<String>(
+            value: spending,
+            isExpanded: true,
+            decoration: const InputDecoration(),
+            items: currencies.map((c) => DropdownMenuItem(
+              value: c, child: Text(c))).toList(),
+            onChanged: (v) {
+              if (v != null) setState(() {
+                spending = v;
+                if (spending == settlement) rate.text = '1';
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          LuiFormLabel(t('settlement')),
+          DropdownButtonFormField<String>(
+            value: settlement,
+            isExpanded: true,
+            decoration: const InputDecoration(),
+            items: currencies.map((c) => DropdownMenuItem(
+              value: c, child: Text(c))).toList(),
+            onChanged: (v) {
+              if (v != null) setState(() {
+                settlement = v;
+                if (spending == settlement) rate.text = '1';
+              });
+            },
+          ),
+          const SizedBox(height: 22),
+          LuiFormLabel(t('rate')),
+          TextFormField(
+            controller: rate,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.currency_exchange_outlined),
+              helperText: l.rateHint,
+              helperMaxLines: 2,
+            ),
+            validator: (v) {
+              final n = double.tryParse(v ?? '');
+              return n == null || !n.isFinite || n <= 0 ? t('invalid') : null;
+            }),
+          const SizedBox(height: 22),
+          LuiFormLabel(t('budget')),
+          TextFormField(
+            controller: budget,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              hintText: '0.00',
+              suffixText: spending,
+            ),
+            validator: (v) {
+              if ((v ?? '').trim().isEmpty) return null;
+              final n = double.tryParse(v!);
+              return n == null || !n.isFinite || n < 0 ? t('invalid') : null;
+            }),
+          const SizedBox(height: 30),
+          FilledButton(
+            onPressed: () {
+              if (!form.currentState!.validate()) return;
+              Navigator.pop(context, Group(
+                DateTime.now().microsecondsSinceEpoch.toString(),
+                name.text.trim(), travel, spending, settlement,
+                double.parse(rate.text),
+                budget.text.trim().isEmpty ? null : double.parse(budget.text)));
+            },
+            child: Text(t('create')),
+          ),
+        ]),
+      ),
     );
   }
 }
@@ -313,28 +347,27 @@ class GroupPage extends StatelessWidget {
   final String Function(String) t;
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(group.name)),
-    body: ListView(padding: const EdgeInsets.all(20), children: [
-      Card(child: Padding(padding: const EdgeInsets.all(24), child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(group.travel ? '✈️ 🌸' : '🍕 🎉',
-            style: const TextStyle(fontSize: 38)),
-          const SizedBox(height: 10),
-          Text(group.name, style: const TextStyle(fontSize: 25,
-            fontWeight: FontWeight.w900)),
-          Text('1 ' + group.settlement + ' = ' +
-            group.rate.toString() + ' ' + group.spending),
-          if (group.budget != null) Text(t('budget') + ': ' +
-            group.budget.toString() + ' ' + group.spending),
-        ]))),
-      for (final item in [
-        ['💸', t('expenses')], ['🪙', t('fund')], ['👯', t('members')]
-      ]) Card(child: ListTile(
-        contentPadding: const EdgeInsets.all(18),
-        leading: Text(item[0], style: const TextStyle(fontSize: 30)),
-        title: Text(item[1]),
-        subtitle: Text(t('soon')),
-      )),
-      const SizedBox(height: 14),
+    body: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 32), children: [
+      Text(group.name, style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+        fontWeight: FontWeight.w700, letterSpacing: -0.8)),
+      const SizedBox(height: 8),
+      Text('1 ' + group.settlement + ' = ' + group.rate.toString() +
+        ' ' + group.spending,
+        style: Theme.of(context).textTheme.bodyMedium),
+      if (group.budget != null) ...[
+        const SizedBox(height: 12),
+        Text(t('budget') + ': ' + group.budget.toString() + ' ' + group.spending),
+      ],
+      const SizedBox(height: 28),
+      LuiFeatureTile(icon: Icons.receipt_long_outlined,
+        title: t('expenses'), subtitle: t('soon'), trailing: const SizedBox.shrink()),
+      const SizedBox(height: 12),
+      LuiFeatureTile(icon: Icons.account_balance_wallet_outlined,
+        title: t('fund'), subtitle: t('soon'), trailing: const SizedBox.shrink()),
+      const SizedBox(height: 12),
+      LuiFeatureTile(icon: Icons.people_outline,
+        title: t('members'), subtitle: t('soon'), trailing: const SizedBox.shrink()),
+      const SizedBox(height: 24),
       Text(t('local'), style: Theme.of(context).textTheme.bodySmall),
     ]),
   );
