@@ -619,6 +619,26 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         if (mounted) Navigator.pop(context,true);
         return;
       }
+      if (!payFromFund) {
+        // Offline-first: save to durable SQLite before navigating away.
+        // One immutable UUID is used for every server retry.
+        await OfflineExpenseOutbox.instance.queue(
+          groupId: widget.groupId,
+          title: title.text,
+          amount: amount.text.trim(),
+          currency: expenseCurrency,
+          rateToSpending: expenseCurrency == widget.currency
+            ? '1' : exchangeRate.text.trim(),
+          paidBy: payer!,
+          participants: widget.members
+            .map((m) => m['user_id'] as String)
+            .where(selected.contains).toList(),
+          receipt: receipt?.jpeg,
+          receiptDate: receiptDate,
+        );
+        if (mounted) Navigator.pop(context, true);
+        return;
+      }
       String createdId;
       if (payFromFund) {
         createdId = await widget.api.addFundPurchase(
