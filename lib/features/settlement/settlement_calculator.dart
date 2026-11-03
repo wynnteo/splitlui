@@ -46,6 +46,7 @@ class SettlementCalculator {
     required List<String> memberIds,
     required List<Map<String, dynamic>> expenses,
     required List<Map<String, dynamic>> shares,
+    List<Map<String, dynamic>> repayments = const [],
   }) {
     final balance = <String, int>{for (final id in memberIds) id: 0};
     final expensesById = <String, Map<String, dynamic>>{};
@@ -86,6 +87,21 @@ class SettlementCalculator {
       if (shareTotals[entry.key] != cents(entry.value['amount_spending'])) {
         throw StateError('Expense shares do not match converted expense');
       }
+    }
+
+    final seenPayments = <String>{};
+    for (final repayment in repayments) {
+      final id = repayment['id'] as String;
+      final from = repayment['from_user_id'] as String;
+      final to = repayment['to_user_id'] as String;
+      if (!seenPayments.add(id) || from == to ||
+          !balance.containsKey(from) || !balance.containsKey(to)) {
+        throw StateError('Invalid repayment record');
+      }
+      final value = cents(repayment['amount_spending']);
+      if (value <= 0) throw StateError('Invalid repayment amount');
+      balance[from] = balance[from]! + value;
+      balance[to] = balance[to]! - value;
     }
 
     final positives = balance.entries.where((e) => e.value > 0)
