@@ -479,7 +479,7 @@ class _SettlementPageState extends State<SettlementPage> {
                   ((receipt['note'] as String).isEmpty
                     ? '' : ' · ' + (receipt['note'] as String)) +
                   ((receipt['paid_currency'] as String) != widget.spendingCurrency
-                    ? '\\n' + l.repaymentLedgerEquivalent + ': ' +
+                    ? '\n' + l.repaymentLedgerEquivalent + ': ' +
                       widget.spendingCurrency + ' ' +
                       (receipt['amount_spending'] as num).toStringAsFixed(2)
                     : ''),
