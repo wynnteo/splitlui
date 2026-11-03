@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,14 +8,25 @@ import 'features/groups/shared_groups_page.dart';
 import 'ui/lui_style.dart';
 import 'l10n/generated/app_localizations.dart';
 
-const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-final bool cloudEnabled = supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+bool cloudEnabled = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (cloudEnabled) {
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  try {
+    // This JSON contains only a public client URL and publishable key.
+    // Bundled as a Flutter asset for Android Studio's standard Run button.
+    final config = jsonDecode(
+      await rootBundle.loadString('config/supabase.json'),
+    ) as Map<String, dynamic>;
+    final url = config['SUPABASE_URL'] as String? ?? '';
+    final key = config['SUPABASE_ANON_KEY'] as String? ?? '';
+    if (url.isNotEmpty && key.isNotEmpty) {
+      await Supabase.initialize(url: url, anonKey: key);
+      cloudEnabled = true;
+    }
+  } catch (error) {
+    // Local-only features remain available if cloud configuration fails.
+    debugPrint('SplitLui cloud startup unavailable: $error');
   }
   runApp(const SplitLui());
 }
@@ -373,36 +385,133 @@ class GroupPage extends StatelessWidget {
   );
 }
 
-class Settings extends StatelessWidget {
+class Settings extends StatefulWidget {
   const Settings({super.key, required this.t, required this.mode,
     required this.language, required this.onMode, required this.onLanguage});
+
   final String Function(String) t;
   final ThemeMode mode;
   final String language;
   final ValueChanged<ThemeMode> onMode;
   final ValueChanged<String> onLanguage;
 
-  @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(t('settings'))),
-    body: ListView(padding: const EdgeInsets.all(20), children: [
-      Text(t('theme'), style: Theme.of(context).textTheme.titleLarge),
-      for (final choice in ThemeMode.values) ListTile(
-        title: Text(t(choice.name)),
-        trailing: mode == choice ? const Icon(Icons.check_circle) : null,
-        onTap: () => onMode(choice),
-      ),
-      const Divider(),
-      Text(t('language'), style: Theme.of(context).textTheme.titleLarge),
-      for (final item in const {
-        'en':'English', 'zh':'简体中文'
-      }.entries) ListTile(
-        title: Text(item.value),
-        trailing: language == item.key ? const Icon(Icons.check_circle) : null,
-        onTap: () => onLanguage(item.key),
-      ),
-      const SizedBox(height: 24),
-      Text(AppLocalizations.of(context)!.version, textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall),
+  @override State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  late ThemeMode selectedMode;
+  late String selectedLanguage;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedMode = widget.mode;
+    selectedLanguage = widget.language;
+  }
+
+  @override
+  void didUpdateWidget(covariant Settings oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.mode != oldWidget.mode) selectedMode = widget.mode;
+    if (widget.language != oldWidget.language) selectedLanguage = widget.language;
+  }
+
+  void changeTheme(ThemeMode value) {
+    setState(() => selectedMode = value);
+    widget.onMode(value);
+  }
+
+  void changeLanguage(String value) {
+    setState(() => selectedLanguage = value);
+    widget.onLanguage(value);
+  }
+
+  Widget sectionHeader(String title, String description) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w700, letterSpacing: -0.2)),
+      const SizedBox(height: 4),
+      Text(description, style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant)),
     ]),
   );
+
+  Widget choiceTile({
+    required String title,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(children: [
+          Icon(icon, size: 21,
+            color: selected ? colors.primary : colors.onSurfaceVariant),
+          const SizedBox(width: 14),
+          Expanded(child: Text(title, style: TextStyle(
+            fontSize: 15, fontWeight: selected ? FontWeight.w600 : FontWeight.w400))),
+          if (selected) Icon(Icons.check_circle_rounded,
+            size: 21, color: colors.primary),
+        ]),
+      ),
+    );
+  }
+
+  Widget choiceCard(List<Widget> items) => Card(
+    clipBehavior: Clip.antiAlias,
+    child: Column(children: [
+      for (var i = 0; i < items.length; i++) ...[
+        if (i > 0) const Divider(height: 1, indent: 50),
+        items[i],
+      ],
+    ]),
+  );
+
+  @override Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.settings)),
+      body: ListView(padding: const EdgeInsets.fromLTRB(20, 20, 20, 36), children: [
+        Text(l.settingsIntro,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 30),
+        sectionHeader(l.theme, l.appearanceHint),
+        choiceCard([
+          choiceTile(
+            title: l.system, icon: Icons.brightness_auto_outlined,
+            selected: selectedMode == ThemeMode.system,
+            onTap: () => changeTheme(ThemeMode.system)),
+          choiceTile(
+            title: l.light, icon: Icons.light_mode_outlined,
+            selected: selectedMode == ThemeMode.light,
+            onTap: () => changeTheme(ThemeMode.light)),
+          choiceTile(
+            title: l.dark, icon: Icons.dark_mode_outlined,
+            selected: selectedMode == ThemeMode.dark,
+            onTap: () => changeTheme(ThemeMode.dark)),
+        ]),
+        const SizedBox(height: 30),
+        sectionHeader(l.language, l.languageHint),
+        choiceCard([
+          choiceTile(
+            title: 'English', icon: Icons.language_outlined,
+            selected: selectedLanguage == 'en',
+            onTap: () => changeLanguage('en')),
+          choiceTile(
+            title: '简体中文', icon: Icons.translate_outlined,
+            selected: selectedLanguage == 'zh',
+            onTap: () => changeLanguage('zh')),
+        ]),
+        const SizedBox(height: 34),
+        Center(child: Text(l.version,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant))),
+      ]),
+    );
+  }
 }
