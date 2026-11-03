@@ -78,5 +78,18 @@
   "fundContributionHint": "例如：已收现金",
   "fundContributor": "出资人",
   "fundRecordActual": "请在实际收到款项后才记录，不要将口头承诺当作已出资。",
-  "fundNoDoubleSplit": "此费用从共同基金扣除，不会再分摊到个人账目。"
+  "fundNoDoubleSplit": "此费用从共同基金扣除，不会再分摊到个人账目。",
+  "fundRefundMember": "退还成员余额",
+  "fundRefundedTo": "已退还给",
+  "fundRefundRecipient": "收款成员",
+  "fundRefundNotice": "请确认已经把钱退还给成员后才记录。退款金额须由群组自行协商，SplitLui 暂时不会自动计算各人的应退份额。",
+  "fundRefundNote": "退款备注",
+  "fundRefundNoteHint": "例如：旅行结束退还剩余现金",
+  "fundRecordRefund": "记录退款",
+  "fundReverseEntry": "更正这笔记录",
+  "fundReverseWarning": "系统会新增一笔冲销记录并调整余额，原始记录仍会保留。冲销后不可撤销。",
+  "fundCorrectionReason": "更正原因",
+  "fundConfirmCorrection": "确认更正",
+  "fundCorrection": "更正 / 冲销",
+  "fundReversedLabel": "已冲销"
 }
