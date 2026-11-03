@@ -187,5 +187,6 @@
   "offlineNeedsReview": "Sync needs attention · Retry when connected",
   "offlineReceiptPending": "Expense synced · Receipt upload pending",
   "offlineReadOnlySnapshot": "Showing saved expenses from this device. Balances may be outdated until connected.",
-  "offlineReadOnlyDetails": "Offline snapshot. Member splits, receipt downloads and editing require an internet connection. Amounts may have changed on another device."
+  "offlineReadOnlyDetails": "Offline snapshot. Member splits, receipt downloads and editing require an internet connection. Amounts may have changed on another device.",
+  "offlinePendingDetails": "This expense has been stored on this device. It is not included in shared balances until the server confirms it. Do not enter it again while waiting for sync."
 }
