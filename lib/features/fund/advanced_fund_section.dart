@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
+import 'fund_reconciliation.dart';
 
 class AdvancedFundSection extends StatefulWidget {
   const AdvancedFundSection({super.key,required this.groupId,
@@ -46,7 +47,7 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
     }catch(e) {if(mounted)setState(()=>error=e.toString());}
     finally {if(mounted)setState(()=>busy=false);}
   }
-  int cents(num? value)=>((value??0).toDouble()*100).round();
+  int cents(num? value)=>FundReconciliation.cents(value??0);
   String money(int value)=>widget.currency+' '+(value/100).toStringAsFixed(2);
   String name(String id) {
     for(final m in widget.members) {
@@ -174,14 +175,13 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
       a+target(m['user_id'] as String));
     final collected=widget.members.fold(0,(int a,m)=>
       a+received(m['user_id'] as String));
-    final totalRefunds=refunds.fold(0,(int a,x)=>
-      a+cents(x['amount'] as num));
-    final spent=widget.entries.where((x)=>x['entry_type']=='expense')
-      .fold(0,(int a,x)=>a+cents(x['amount'] as num));
+    final totalRefunds=FundReconciliation.sumRefunds(refunds);
+    final spent=FundReconciliation.sumEntries(widget.entries,'expense');
     final outstanding=widget.members.fold(0,(int a,m) {
       final id=m['user_id'] as String;
       final diff=target(id)-received(id);
-      return a+(diff>0?diff:0);
+      return a+FundReconciliation.contributionOutstanding(
+        targetCents:target(id),contributedCents:received(id));
     });
     final balance=cents(widget.balance);
     return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -264,7 +264,9 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
           const SizedBox(height:10),
           Text(l.fundClosingNotFinal,
             style:Theme.of(context).textTheme.bodySmall),
-          if(collected-spent-totalRefunds!=balance)
+          if(!FundReconciliation.reconciles(
+              contributions:collected,purchases:spent,
+              refunds:totalRefunds,balance:balance))
             Text(l.fundReconciliationMismatch,
               style:TextStyle(color:scheme.error)),
         ]),
