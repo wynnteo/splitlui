@@ -92,5 +92,9 @@
   "olderDeviceGroupsHint": "这些群组是在启用云端同步前创建的。转移到线上后，才可以使用开销及共同基金功能。",
   "moveToGroups": "转移到群组",
   "deleteLocalGroup": "删除本地群组？",
-  "deleteLocalWarning": "此操作会从手机永久移除此群组，无法恢复。"
+  "deleteLocalWarning": "此操作会从手机永久移除此群组，无法恢复。",
+  "expenseCurrency": "开销货币",
+  "expenseRateToGroup": "兑换成群组货币的汇率",
+  "groupEquivalent": "换算成群组货币",
+  "expenseConversionHint": "系统会保存这笔开销所用的汇率，同时记录原币与换算金额；换算结果四舍五入至两位小数。"
 }
