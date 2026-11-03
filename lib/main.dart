@@ -153,7 +153,14 @@ class _SplitLuiState extends State<SplitLui> {
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: Builder(builder: (context) {
+    home: cloudEnabled
+      ? Builder(builder: (context) => SharedGroupsPage(
+          onSettings: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => Settings(t: t, language: language, mode: mode,
+              onLanguage: setLanguage, onMode: setMode))),
+        ))
+      : Builder(builder: (context) {
+
       final l = AppLocalizations.of(context)!;
       final colors = Theme.of(context).colorScheme;
       return Scaffold(
@@ -239,17 +246,33 @@ class _SplitLuiState extends State<SplitLui> {
 }
 
 class CreateGroup extends StatefulWidget {
-  const CreateGroup({super.key, required this.t});
+  const CreateGroup({super.key, required this.t, this.initial});
   final String Function(String) t;
+  final Group? initial;
   @override State<CreateGroup> createState() => _CreateGroupState();
 }
 class _CreateGroupState extends State<CreateGroup> {
   static const currencies = ['SGD','JPY','MYR','THB','USD','EUR','GBP','KRW','TWD','IDR','CNY','AUD'];
   final form = GlobalKey<FormState>();
-  final name = TextEditingController(), rate = TextEditingController(text: '115'),
+  final name = TextEditingController(), rate = TextEditingController(),
       budget = TextEditingController();
   bool travel = true;
   String spending = 'JPY', settlement = 'SGD';
+
+  @override void initState() {
+    super.initState();
+    final g = widget.initial;
+    if (g != null) {
+      name.text = g.name;
+      rate.text = g.rate.toString();
+      if (g.budget != null) budget.text = g.budget.toString();
+      travel = g.travel;
+      spending = g.spending;
+      settlement = g.settlement;
+    } else {
+      rate.text = '115';
+    }
+  }
 
   @override void dispose() {
     name.dispose(); rate.dispose(); budget.dispose(); super.dispose();
@@ -258,11 +281,11 @@ class _CreateGroupState extends State<CreateGroup> {
     final t = widget.t;
     final l = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(t('new'))),
+      appBar: AppBar(title: Text(widget.initial == null ? t('new') : l.editGroup)),
       body: Form(
         key: form,
         child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
-          Text(t('new'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          Text(widget.initial == null ? t('new') : l.editGroup, style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700, letterSpacing: -0.8)),
           const SizedBox(height: 6),
           Text(l.cloudSubtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -294,12 +317,12 @@ class _CreateGroupState extends State<CreateGroup> {
             decoration: const InputDecoration(),
             items: currencies.map((c) => DropdownMenuItem(
               value: c, child: Text(c == 'THB' ? l.thaiBaht : c))).toList(),
-            onChanged: (v) {
+            onChanged: widget.initial == null ? (v) {
               if (v != null) setState(() {
                 spending = v;
                 if (spending == settlement) rate.text = '1';
               });
-            },
+            } : null,
           ),
           const SizedBox(height: 18),
           LuiFormLabel(t('settlement')),
@@ -309,12 +332,12 @@ class _CreateGroupState extends State<CreateGroup> {
             decoration: const InputDecoration(),
             items: currencies.map((c) => DropdownMenuItem(
               value: c, child: Text(c == 'THB' ? l.thaiBaht : c))).toList(),
-            onChanged: (v) {
+            onChanged: widget.initial == null ? (v) {
               if (v != null) setState(() {
                 settlement = v;
                 if (spending == settlement) rate.text = '1';
               });
-            },
+            } : null,
           ),
           const SizedBox(height: 22),
           LuiFormLabel(t('rate')),
@@ -349,12 +372,12 @@ class _CreateGroupState extends State<CreateGroup> {
             onPressed: () {
               if (!form.currentState!.validate()) return;
               Navigator.pop(context, Group(
-                DateTime.now().microsecondsSinceEpoch.toString(),
+                widget.initial?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
                 name.text.trim(), travel, spending, settlement,
                 double.parse(rate.text),
                 budget.text.trim().isEmpty ? null : double.parse(budget.text)));
             },
-            child: Text(t('create')),
+            child: Text(widget.initial == null ? t('create') : l.saveChanges),
           ),
         ]),
       ),
