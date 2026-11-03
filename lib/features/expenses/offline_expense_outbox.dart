@@ -62,7 +62,8 @@ class OfflineExpenseOutbox {
           )
         ''');
       });
-    return _database!;
+    _database = db;
+    return db;
     } catch (_) { _opening = null; rethrow; }
   }
 
