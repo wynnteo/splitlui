@@ -187,5 +187,6 @@
   "offlineNeedsReview": "同步需处理 · 联网后重试",
   "offlineReceiptPending": "开销已同步 · 收据待上传",
   "offlineReadOnlySnapshot": "正在显示本机缓存的开销。联网前余额可能不是最新的。",
-  "offlineReadOnlyDetails": "离线缓存资料。成员分摊、收据下载和编辑需要联网；其他设备可能已修改金额。"
+  "offlineReadOnlyDetails": "离线缓存资料。成员分摊、收据下载和编辑需要联网；其他设备可能已修改金额。",
+  "offlinePendingDetails": "这笔开销已保存在本机。服务器确认前不会计入群组余额。等待同步期间请勿重复新增。"
 }
