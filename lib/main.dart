@@ -162,7 +162,11 @@ class _SplitLuiState extends State<SplitLui> {
     theme: design(Brightness.light), darkTheme: design(Brightness.dark), themeMode: mode,
     locale: Locale(language),
     supportedLocales: const [Locale('en'), Locale('zh'), Locale('ms'), Locale('ja')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
     home: Builder(builder: (context) => Scaffold(
       appBar: AppBar(
         title: const Text('SplitLui 🌈', style: TextStyle(fontWeight: FontWeight.w900)),
