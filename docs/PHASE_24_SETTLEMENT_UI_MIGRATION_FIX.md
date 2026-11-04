@@ -48,11 +48,19 @@ Do NOT run `DROP TABLE` on the production Common Fund tables.
   THB total or disables confirmation for tiny FX overages.
 - The history shows the **actual paid amount/currency**, not an
   additional THB equivalent.
-- Internal ledger still uses group spending currency, but the new
-  server RPC credits **the lesser of** the actual converted amount and
-  current outstanding debt on both sides. Overpayments are recorded
-  in the original paid amount and do not create a negative new debt.
-  A receipt cannot be recorded when no outstanding net debt exists.
+- The confirmation form includes a single **This payment settles the full
+  amount** switch, enabled by default. Leave it enabled for an agreed
+  rounded final payment (such as SGD 135 instead of SGD 135.23). Turn it
+  off for a *partial payment*.
+- The new `record_trip_repayment_agreed` RPC records the original cash
+  amount/currency regardless of rounding. A full confirmation clears the
+  suggested outstanding net debt; a partial confirmation credits no more
+  than the actual converted amount. Ledger credit can never exceed either
+  party's outstanding net debt; accidental excess payment does not create
+  a negative new debt. A receipt cannot be recorded if no net debt exists.
+- Existing older clients can continue using the seven-argument
+  `record_trip_repayment_currency` RPC, which now caps overpayments rather
+  than rejecting FX-rounding differences.
 - Only the recipient can confirm a payment; a mistaken confirmation
   can still be reversed through the audited Undo flow.
 - Manual conversion rate entry is only presented when the chosen
@@ -83,9 +91,10 @@ flutter build apk --release
 Suggested manual checks:
 - Four-member trip, THB spending and SGD settlement: pay SGD 135 when
   the equivalent THB figure exceeds outstanding by a small amount.
-  Confirm succeeds; history shows SGD 135 only; remaining debt is zero,
-  not negative.
-- Record partial SGD 50: remaining balance decreases appropriately.
+  Confirm succeeds with **full settlement** enabled; history shows
+  SGD 135 only; remaining debt is zero, not negative.
+- Record partial SGD 50 with **full settlement turned off**: remaining
+  balance decreases appropriately instead of being completely cleared.
 - Attempt to confirm money on behalf of a different recipient: rejected.
 - Confirm against a fully settled debt: rejected (no more debt to credit).
 - Undo a confirmed receipt and verify it no longer affects the ledger.
