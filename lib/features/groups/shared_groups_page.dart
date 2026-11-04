@@ -68,6 +68,18 @@ class SharedGroupApi {
     return (data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  Future<void> renameMember(String groupId,String memberId,String nickname) async {
+    await db.rpc('rename_trip_group_member',params:{
+      'p_group':groupId,'p_member':memberId,'p_nickname':nickname.trim(),
+    });
+  }
+
+  Future<void> removeMember(String groupId,String memberId) async {
+    await db.rpc('remove_trip_group_member',params:{
+      'p_group':groupId,'p_member':memberId,
+    });
+  }
+
   Future<String> invite(String id) async =>
     (await db.rpc('get_trip_invite', params: {'p_group': id})) as String;
 
@@ -430,6 +442,67 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
     }
   }
 
+  Future<void> renameMember(Map<String,dynamic> member) async {
+    if(busy || error!=null)return;
+    final l=AppLocalizations.of(context)!;
+    final name=await showModalBottomSheet<String>(
+      context:context,isScrollControlled:true,useSafeArea:true,
+      showDragHandle:true,
+      backgroundColor:Theme.of(context).colorScheme.surface,
+      builder:(_)=>_SharedGroupTextDialog(
+        title:l.groupRenameMember,
+        hint:l.groupMemberNicknameHint,
+        initial:member['nickname'] as String,
+        cancelLabel:l.cloudCancel,confirmLabel:l.saveChanges,maxLength:60,
+      ),
+    );
+    if(name==null || !mounted || name==(member['nickname'] as String))return;
+    setState(()=>busy=true);
+    try {
+      await widget.api.renameMember(group['id'] as String,
+        member['user_id'] as String,name);
+      if(mounted)await refresh();
+    }catch(e) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(e.toString())));
+    }finally {
+      if(mounted)setState(()=>busy=false);
+    }
+  }
+
+  Future<void> removeMember(Map<String,dynamic> member) async {
+    if(busy || error!=null || member['role']=='owner')return;
+    final l=AppLocalizations.of(context)!;
+    final confirmed=await showDialog<bool>(
+      context:context,
+      builder:(dialogContext)=>AlertDialog(
+        title:Text(l.groupRemoveMember),
+        content:Text((member['nickname'] as String)+'\n\n'+
+          l.groupRemoveMemberWarning),
+        actions:[
+          TextButton(
+            onPressed:()=>Navigator.pop(dialogContext,false),
+            child:Text(l.cloudCancel)),
+          FilledButton(
+            onPressed:()=>Navigator.pop(dialogContext,true),
+            child:Text(l.groupRemoveMember)),
+        ],
+      ),
+    );
+    if(confirmed!=true || !mounted)return;
+    setState(()=>busy=true);
+    try {
+      await widget.api.removeMember(group['id'] as String,
+        member['user_id'] as String);
+      if(mounted)await refresh();
+    }catch(e) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(e.toString())));
+    }finally {
+      if(mounted)setState(()=>busy=false);
+    }
+  }
+
   Future<void> deleteGroup() async {
     final l = AppLocalizations.of(context)!;
     final confirmedName = await showModalBottomSheet<String>(
@@ -597,7 +670,23 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
             icon: Icons.person_outline,
             title: m['nickname'] as String,
             subtitle: m['role'] == 'owner' ? l.cloudOwner : null,
-            trailing: const SizedBox.shrink(),
+            trailing:owner && !busy && error==null
+              ? PopupMenuButton<String>(
+                  tooltip:l.groupManageMember,
+                  icon:const Icon(Icons.more_vert_rounded),
+                  onSelected:(choice) {
+                    if(choice=='rename')renameMember(m);
+                    if(choice=='remove')removeMember(m);
+                  },
+                  itemBuilder:(_)=>[
+                    PopupMenuItem(
+                      value:'rename',child:Text(l.groupRenameMember)),
+                    if(m['role']!='owner')
+                      PopupMenuItem(
+                        value:'remove',child:Text(l.groupRemoveMember)),
+                  ],
+                )
+              :const SizedBox.shrink(),
           ),
           const SizedBox(height: 10),
         ],

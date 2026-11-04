@@ -249,5 +249,10 @@
   "fundManualNoticeShort": "只记录实际收到或已支付的金额。",
   "fundOpenRequests": "笔待处理请求",
   "fundRefundRecords": "笔已确认退款",
-  "fundClosingNotFinalShort": "仅供预览，不会转账或关闭群组。"
+  "fundClosingNotFinalShort": "仅供预览，不会转账或关闭群组。",
+  "groupManageMember": "管理成员",
+  "groupRenameMember": "修改成员名称",
+  "groupMemberNicknameHint": "此群组显示的成员名称",
+  "groupRemoveMember": "移除成员",
+  "groupRemoveMemberWarning": "确定从群组中移除此成员吗？对方将无法再访问，旧邀请代码也会失效。已有财务记录的成员不能移除，但可以修改其名称。"
 }

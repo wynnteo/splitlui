@@ -529,7 +529,8 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
         constraints:BoxConstraints(
           maxHeight:MediaQuery.sizeOf(sheetContext).height*0.78),
         child:SingleChildScrollView(
-          padding:const EdgeInsets.fromLTRB(20,4,20,32),
+          padding:EdgeInsets.fromLTRB(20,4,20,
+            MediaQuery.viewPaddingOf(sheetContext).bottom + 36),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Row(children:[
               Icon(Icons.account_balance_wallet_outlined,
@@ -578,11 +579,18 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
                   label:Text(l.deleteExpense)),
               ]),
             ],
+            if(!canEdit) ...[
+              const SizedBox(height:12),
+              Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                Icon(Icons.info_outline_rounded,size:18,
+                  color:Theme.of(sheetContext).colorScheme.onSurfaceVariant),
+                const SizedBox(width:8),
+                Expanded(child:Text(l.fundPurchaseAuthorOnly,
+                  style:Theme.of(sheetContext).textTheme.bodySmall)),
+              ]),
+            ],
             const SizedBox(height:12),
             ReceiptAttachmentPreview(fundEntryId:entry['id'] as String),
-            if(!canEdit)
-              Text(l.fundPurchaseAuthorOnly,
-                style:Theme.of(sheetContext).textTheme.bodySmall),
           ]),
         ),
       ),
