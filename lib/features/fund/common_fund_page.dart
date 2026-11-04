@@ -191,13 +191,15 @@ class _CommonFundPageState extends State<CommonFundPage> {
           )),
           const SizedBox(height: 14),
           Row(children: [
-            Expanded(child: FilledButton.icon(
-              onPressed: busy ? null : () => addEntry(true),
-              icon: const Icon(Icons.add_circle_outline, size: 19),
-              label: Text(l.fundAddContributionShort,
-                textAlign: TextAlign.center),
-            )),
-            const SizedBox(width: 10),
+            if(isOwner) ...[
+              Expanded(child: FilledButton.icon(
+                onPressed: busy ? null : () => addEntry(true),
+                icon: const Icon(Icons.add_circle_outline, size: 19),
+                label: Text(l.fundAddContributionShort,
+                  textAlign: TextAlign.center),
+              )),
+              const SizedBox(width: 10),
+            ],
             Expanded(child: OutlinedButton.icon(
               onPressed: busy ? null : () => addEntry(false),
               icon: const Icon(Icons.receipt_long_outlined, size: 19),
