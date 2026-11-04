@@ -839,7 +839,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     final ids=splitMemberIds;
     final n=double.tryParse(amount.text.trim());
     if(n==null || !n.isFinite || n<=0 ||
-      n*100>9000000000000000000) {
+      n*100>9007199254740991) {
       throw const FormatException('Enter a valid expense amount');
     }
     final totalCents=(n*100).round();
@@ -913,9 +913,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     if(!payFromFund) {
       try {
         splitCents=calculatedShares.cents;
-      } catch(e) {
+      } catch(_) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content:Text(e.toString())));
+          SnackBar(content:Text(l.splitAllocationInvalid)));
         return;
       }
     }
