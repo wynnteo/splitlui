@@ -30,3 +30,9 @@ doc/api/
 
 # SplitLui local Flutter --dart-define-from-file settings
 config/supabase.local.json
+
+# Android release signing files and local credentials
+*.jks
+*.keystore
+android/key.properties
+android/local.properties
