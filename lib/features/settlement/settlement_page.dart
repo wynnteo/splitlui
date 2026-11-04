@@ -26,7 +26,6 @@ class SettlementPage extends StatefulWidget {
 
 class _SettlementPageState extends State<SettlementPage> {
   bool busy = true;
-  bool showSettlementCurrency = true;
   String? error;
   SettlementResult? result;
   ExpenseCurrencySummary? expenseSummary;
@@ -171,17 +170,11 @@ class _SettlementPageState extends State<SettlementPage> {
     widget.exchangeRate.isFinite && widget.exchangeRate > 0;
 
   String shownAmount(int cents) {
-    if (hasAlternateCurrency && showSettlementCurrency) {
+    if (hasAlternateCurrency) {
       return '≈ ' + widget.settlementCurrency + ' ' +
         (cents / 100 / widget.exchangeRate).toStringAsFixed(2);
     }
     return amount(cents);
-  }
-
-  String? secondaryAmount(int cents) {
-    if (!hasAlternateCurrency) return null;
-    if (showSettlementCurrency) return amount(cents);
-    return settlementEstimate(cents);
   }
 
   String repaymentMessage(SuggestedTransfer transfer, AppLocalizations l) {
@@ -377,23 +370,6 @@ class _SettlementPageState extends State<SettlementPage> {
             label: Text(l.payNowDetails),
           ),
           const SizedBox(height: 18),
-          if (hasAlternateCurrency) ...[
-            Row(children:[
-              Expanded(child:Text(l.settlementDisplayCurrency,
-                style:Theme.of(context).textTheme.labelMedium)),
-              SegmentedButton<bool>(
-                showSelectedIcon:false,
-                segments:[
-                  ButtonSegment(value:false,label:Text(widget.spendingCurrency)),
-                  ButtonSegment(value:true,label:Text(widget.settlementCurrency)),
-                ],
-                selected:{showSettlementCurrency},
-                onSelectionChanged:(v)=>setState(
-                  ()=>showSettlementCurrency=v.first),
-              ),
-            ]),
-            const SizedBox(height:12),
-          ],
           if (busy) const Center(child: CircularProgressIndicator()),
           if (error != null) Card(child: Padding(
             padding: const EdgeInsets.all(18),
