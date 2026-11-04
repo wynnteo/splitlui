@@ -214,5 +214,6 @@
   "fundAdvancedLoadError": "Could not load fund targets and refunds. Check your connection and Supabase migration.",
   "fundRefundHistory": "Confirmed refunds",
   "fundNoRefunds": "No refunds confirmed yet.",
-  "repaymentActualReceivedHint": "Enter the amount you actually received. A rounded or partial payment is fine."
+  "repaymentActualReceivedHint": "Enter the amount you actually received. A rounded or partial payment is fine.",
+  "settlementMoreDetails": "More details"
 }
