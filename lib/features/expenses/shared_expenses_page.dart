@@ -743,6 +743,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   bool saving = false;
   bool readingReceipt = false;
   bool existingSharesLoading = false;
+  String? existingSharesError;
   DateTime? receiptDate;
   bool currencyManuallySet = false;
   ReceiptDraft? receipt;
@@ -873,22 +874,26 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   Future<void> loadExistingShares() async {
+    if(widget.initialExpense==null)return;
+    if(mounted)setState(() {
+      existingSharesLoading=true;
+      existingSharesError=null;
+    });
     try {
-      final shares = await widget.api.shares(widget.initialExpense!['id'] as String);
-      if (mounted) setState(() {
-        selected..clear()..addAll(shares.map((x) => x['user_id'] as String));
+      final shares=await widget.api.shares(
+        widget.initialExpense!['id'] as String);
+      if(shares.isEmpty)throw StateError('No saved expense shares found');
+      if(mounted)setState(() {
+        selected..clear()..addAll(shares.map((x)=>x['user_id'] as String));
         splitMode=ExpenseSplitMode.exact;
         splitInputs..clear()..addEntries(shares.map((x)=>MapEntry(
           x['user_id'] as String,
           (x['share_amount'] as num).toStringAsFixed(2))));
-        existingSharesLoading = false;
       });
-    } catch (e) {
-      if (mounted) {
-        // Do not allow saving an incomplete split when the read fails.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())));
-      }
+    }catch(e) {
+      if(mounted)setState(()=>existingSharesError=e.toString());
+    }finally {
+      if(mounted)setState(()=>existingSharesLoading=false);
     }
   }
 
@@ -918,7 +923,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   Future<void> save() async {
-    if (saving || existingSharesLoading ||
+    if (saving || existingSharesLoading || existingSharesError!=null ||
         !(form.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
     if (!payFromFund && (selected.isEmpty || payer == null)) {
@@ -1077,6 +1082,29 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
       body: SafeArea(top: false, child: Form(key: form,
         child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
+          if(widget.initialExpense!=null && existingSharesLoading) ...[
+            const LinearProgressIndicator(),
+            const SizedBox(height:12),
+          ],
+          if(widget.initialExpense!=null && existingSharesError!=null) ...[
+            Card(child:Padding(
+              padding:const EdgeInsets.all(14),
+              child:Column(crossAxisAlignment:CrossAxisAlignment.start,
+                children:[
+                  Text('Unable to load the saved split. No changes were made.',
+                    style:TextStyle(color:Theme.of(context).colorScheme.error)),
+                  const SizedBox(height:6),
+                  Text(existingSharesError!,
+                    style:Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height:8),
+                  OutlinedButton.icon(
+                    onPressed:loadExistingShares,
+                    icon:const Icon(Icons.refresh),
+                    label:Text(l.cloudRefresh)),
+                ]),
+            )),
+            const SizedBox(height:12),
+          ],
           LuiFormLabel(l.expenseTitle),
           TextFormField(
             controller: title, maxLength: 120,
@@ -1388,7 +1416,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           ],
           const SizedBox(height: 28),
           FilledButton(
-            onPressed: saving || existingSharesLoading ? null : save,
+            onPressed: saving || existingSharesLoading || existingSharesError!=null ? null : save,
             child: saving
               ? const SizedBox(height: 20, width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2))
