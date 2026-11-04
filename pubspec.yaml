@@ -13,6 +13,8 @@ dependencies:
   supabase_flutter: ^2.8.0
   intl: any
   share_plus: ^11.1.0
+  pdf: ^3.11.3
+  cross_file: ^0.3.4+2
   image_picker: ^1.1.2
   flutter_image_compress: ^2.4.0
   google_mlkit_text_recognition: ^0.15.0

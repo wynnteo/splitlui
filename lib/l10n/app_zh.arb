@@ -216,5 +216,15 @@
   "fundNoRefunds": "暂无已确认的退款。",
   "repaymentActualReceivedHint": "请输入实际收到的金额。可以是凑整金额或部分还款。",
   "settlementMoreDetails": "查看更多详情",
-  "repaymentSettleFull": "这笔还款已全部结清"
+  "repaymentSettleFull": "这笔还款已全部结清",
+  "tripReportTitle": "旅程结算报告",
+  "tripReportEntryHint": "分享开销、共同基金及还款汇总",
+  "tripReportIntro": "生成旅程记录的 PDF 快照，不会自动关闭群组或进行转账。",
+  "tripReportIncludes": "报告内容",
+  "tripReportContents": "原币开销、换算估计、未结清还款、共同基金贡献与退款、待收款目标及对账检查。",
+  "tripReportIncludeReceipts": "附上收据照片",
+  "tripReportReceiptNotice": "选填 · 最多 8 张。任何收到 PDF 的人都可以保存这些照片。",
+  "tripReportWarning": "需要网络连接及最新同步记录。PDF 只是快照，并非付款确认或正式基金结算。目前导出的 PDF 使用英文标题及支持拉丁文字的字体。",
+  "tripReportGenerating": "正在生成 PDF…",
+  "tripReportSharePdf": "生成并分享 PDF"
 }
