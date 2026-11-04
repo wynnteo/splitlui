@@ -9,15 +9,15 @@ import 'receipt_capture.dart';
 import 'offline_expense_outbox.dart';
 import 'split_allocation.dart';
 import 'fund_purchase_edit_page.dart';
+import '../groups/group_paged_query.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
 
   Future<List<Map<String, dynamic>>> list(String groupId) async {
-    final rows = await db.from('trip_expenses')
-        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_by,created_at,updated_at,receipt_date')
-        .eq('group_id', groupId).order('created_at', ascending: false);
-    return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return GroupPagedQuery(db).read(
+      table:'trip_expenses',groupId:groupId,
+      columns:'id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_by,created_at,updated_at,receipt_date');
   }
 
   Future<Map<String,dynamic>?> fundBalance(String groupId) async {
@@ -26,11 +26,10 @@ class SharedExpenseApi {
   }
 
   Future<List<Map<String,dynamic>>> fundPurchases(String groupId) async {
-    final rows = await db.from('trip_fund_entries')
-        .select('id,description,amount,original_amount,original_currency,rate_to_spending,recorded_by,receipt_date,created_at,updated_at')
-        .eq('group_id', groupId).eq('entry_type','expense')
-        .order('created_at',ascending:false);
-    return rows.map((r) => Map<String,dynamic>.from(r)).toList();
+    return GroupPagedQuery(db).read(
+      table:'trip_fund_entries',groupId:groupId,
+      columns:'id,description,amount,original_amount,original_currency,rate_to_spending,recorded_by,receipt_date,created_at,updated_at',
+      filterColumn:'entry_type',filterValue:'expense');
   }
 
   Future<String> addFundPurchase({
