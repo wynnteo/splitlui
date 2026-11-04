@@ -1,11 +1,12 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    applicationId = "com.cloudfullstack.splitlui"
+    namespace = "com.cloudfullstack.splitlui"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,9 +27,9 @@ android {
     signingConfigs {
         create("release") {
             keyAlias = "my-key-alias"
-            keyPassword = "WyNn8989!@"
-            storeFile = file("/Users/wynnteo/my-release-key.jks")
-            storePassword = "WyNn8989!@"
+            keyPassword = System.getenv("SPLITLUI_KEY_PASSWORD") ?: ""
+            storeFile = file("${System.getProperty("user.home")}/my-release-key.jks")
+            storePassword = System.getenv("SPLITLUI_STORE_PASSWORD") ?: ""
         }
     }
 
