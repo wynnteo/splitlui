@@ -694,7 +694,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tripReportWarning =>
-      '需要网络连接及最新同步记录。PDF 只是快照，并非付款确认或正式基金结算。目前导出的 PDF 使用英文标题及支持拉丁文字的字体。';
+      '需要网络连接及最新同步记录。PDF 只是快照，并非付款确认或正式基金结算。报告支持英文与简体中文。';
 
   @override
   String get tripReportGenerating => '正在生成 PDF…';
@@ -738,4 +738,53 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get splitAllocationInvalid => '请检查金额及分摊数值。指定金额须等于账单总额，百分比须合计 100%。';
+
+  @override
+  String get receiptSuggestionsTitle => '收据识别结果';
+
+  @override
+  String get receiptSuggestionsSubtitle => '点击建议值即可填入，保存前请确认所有资料。';
+
+  @override
+  String get receiptMultipleTotalsWarning => '检测到多个可能的总金额，请根据收据选择正确金额。';
+
+  @override
+  String get receiptNoTotalFound => '无法确定总金额，请手动输入。';
+
+  @override
+  String get receiptAmbiguousDateWarning => '日期可能是日/月或月/日格式，请确认后再采用。';
+
+  @override
+  String get fundAddContributionShort => '加入资金';
+
+  @override
+  String get fundPayExpenseShort => '支付开销';
+
+  @override
+  String get fundManualNoticeShort => '只记录实际收到或已支付的金额。';
+
+  @override
+  String get fundOpenRequests => '笔待处理请求';
+
+  @override
+  String get fundRefundRecords => '笔已确认退款';
+
+  @override
+  String get fundClosingNotFinalShort => '仅供预览，不会转账或关闭群组。';
+
+  @override
+  String get groupManageMember => '管理成员';
+
+  @override
+  String get groupRenameMember => '修改成员名称';
+
+  @override
+  String get groupMemberNicknameHint => '此群组显示的成员名称';
+
+  @override
+  String get groupRemoveMember => '移除成员';
+
+  @override
+  String get groupRemoveMemberWarning =>
+      '确定从群组中移除此成员吗？对方将无法再访问，旧邀请代码也会失效。已有财务记录的成员不能移除，但可以修改其名称。';
 }

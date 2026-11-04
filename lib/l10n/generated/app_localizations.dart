@@ -1445,7 +1445,7 @@ abstract class AppLocalizations {
   /// No description provided for @tripReportWarning.
   ///
   /// In en, this message translates to:
-  /// **'Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.'**
+  /// **'Requires internet and the latest synced records. The PDF is a snapshot, not confirmation of payment or formal fund closure. Reports support English and Simplified Chinese.'**
   String get tripReportWarning;
 
   /// No description provided for @tripReportGenerating.
@@ -1531,6 +1531,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%.'**
   String get splitAllocationInvalid;
+
+  /// No description provided for @receiptSuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected on receipt'**
+  String get receiptSuggestionsTitle;
+
+  /// No description provided for @receiptSuggestionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a suggestion to use it. Please check everything before saving.'**
+  String get receiptSuggestionsSubtitle;
+
+  /// No description provided for @receiptMultipleTotalsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'More than one possible total was found. Choose the amount on your receipt.'**
+  String get receiptMultipleTotalsWarning;
+
+  /// No description provided for @receiptNoTotalFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No clear total found. Enter the amount manually.'**
+  String get receiptNoTotalFound;
+
+  /// No description provided for @receiptAmbiguousDateWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Date format might be day/month or month/day. Check before applying.'**
+  String get receiptAmbiguousDateWarning;
+
+  /// No description provided for @fundAddContributionShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Add money'**
+  String get fundAddContributionShort;
+
+  /// No description provided for @fundPayExpenseShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay expense'**
+  String get fundPayExpenseShort;
+
+  /// No description provided for @fundManualNoticeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Record only money actually received or spent.'**
+  String get fundManualNoticeShort;
+
+  /// No description provided for @fundOpenRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'open requests'**
+  String get fundOpenRequests;
+
+  /// No description provided for @fundRefundRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'confirmed refunds'**
+  String get fundRefundRecords;
+
+  /// No description provided for @fundClosingNotFinalShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview only — no money moves and this does not close the group.'**
+  String get fundClosingNotFinalShort;
+
+  /// No description provided for @groupManageMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage member'**
+  String get groupManageMember;
+
+  /// No description provided for @groupRenameMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit member name'**
+  String get groupRenameMember;
+
+  /// No description provided for @groupMemberNicknameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name shown in this group'**
+  String get groupMemberNicknameHint;
+
+  /// No description provided for @groupRemoveMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove member'**
+  String get groupRemoveMember;
+
+  /// No description provided for @groupRemoveMemberWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this member from the group? They will lose access and the old invite code will be replaced. Members with financial activity cannot be removed; you can rename them instead.'**
+  String get groupRemoveMemberWarning;
 }
 
 class _AppLocalizationsDelegate

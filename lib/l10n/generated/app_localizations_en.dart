@@ -746,7 +746,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripReportWarning =>
-      'Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.';
+      'Requires internet and the latest synced records. The PDF is a snapshot, not confirmation of payment or formal fund closure. Reports support English and Simplified Chinese.';
 
   @override
   String get tripReportGenerating => 'Preparing PDF…';
@@ -793,4 +793,59 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get splitAllocationInvalid =>
       'Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%.';
+
+  @override
+  String get receiptSuggestionsTitle => 'Detected on receipt';
+
+  @override
+  String get receiptSuggestionsSubtitle =>
+      'Tap a suggestion to use it. Please check everything before saving.';
+
+  @override
+  String get receiptMultipleTotalsWarning =>
+      'More than one possible total was found. Choose the amount on your receipt.';
+
+  @override
+  String get receiptNoTotalFound =>
+      'No clear total found. Enter the amount manually.';
+
+  @override
+  String get receiptAmbiguousDateWarning =>
+      'Date format might be day/month or month/day. Check before applying.';
+
+  @override
+  String get fundAddContributionShort => 'Add money';
+
+  @override
+  String get fundPayExpenseShort => 'Pay expense';
+
+  @override
+  String get fundManualNoticeShort =>
+      'Record only money actually received or spent.';
+
+  @override
+  String get fundOpenRequests => 'open requests';
+
+  @override
+  String get fundRefundRecords => 'confirmed refunds';
+
+  @override
+  String get fundClosingNotFinalShort =>
+      'Preview only — no money moves and this does not close the group.';
+
+  @override
+  String get groupManageMember => 'Manage member';
+
+  @override
+  String get groupRenameMember => 'Edit member name';
+
+  @override
+  String get groupMemberNicknameHint => 'Name shown in this group';
+
+  @override
+  String get groupRemoveMember => 'Remove member';
+
+  @override
+  String get groupRemoveMemberWarning =>
+      'Remove this member from the group? They will lose access and the old invite code will be replaced. Members with financial activity cannot be removed; you can rename them instead.';
 }
