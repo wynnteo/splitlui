@@ -461,6 +461,13 @@ class _SettlementPageState extends State<SettlementPage> {
                         Text(item.currency + ' ' +
                           (item.cents/100).toStringAsFixed(2)),
                       ])),
+                  const SizedBox(height:8),
+                  Row(children:[
+                    Expanded(child:Text(l.expenseCombinedTotal)),
+                    Text('≈ ' + expenseSummary!.totalSettlementCurrency +
+                      ' ' + (expenseSummary!.totalSettlementCents/100)
+                        .toStringAsFixed(2)),
+                  ]),
                   const Divider(height:24),
                 ],
                 Text(l.settlementMemberBalances,
