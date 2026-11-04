@@ -43,7 +43,7 @@ void main() {
   test('Reversed repayments never reduce balances',(){
     final receipt=<String,dynamic>{
       'id':'r1','from_user_id':'ben','to_user_id':'alex',
-      'amount_spending':750.0,'reversed_at':null,
+      'amount_spending':500.0,'reversed_at':null,
     };
     final active=make(repayments:[receipt]);
     final reversed=make(repayments:[
