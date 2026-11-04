@@ -189,7 +189,6 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
     final spent=FundReconciliation.sumEntries(widget.entries,'expense');
     final outstanding=widget.members.fold(0,(int a,m) {
       final id=m['user_id'] as String;
-      final diff=target(id)-received(id);
       return a+FundReconciliation.contributionOutstanding(
         targetCents:target(id),contributedCents:received(id));
     });
@@ -199,12 +198,26 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
       const SizedBox(height:12),
       Card(child:Padding(padding:const EdgeInsets.all(16),
         child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          summaryLine(l.fundTargetTotal,money(targetTotal)),
-          summaryLine(l.fundTotalReceived,money(collected)),
-          summaryLine(l.fundOutstandingToCollect,money(outstanding)),
-          const SizedBox(height:8),
-          Text(l.fundTargetsNotBalance,
-            style:Theme.of(context).textTheme.bodySmall),
+          Row(children:[
+            Expanded(child:_fundMetric(l.fundTotalReceived,money(collected))),
+            const SizedBox(width:12),
+            Expanded(child:_fundMetric(l.fundOutstandingToCollect,
+              money(outstanding))),
+          ]),
+          if(targetTotal>0) ...[
+            const SizedBox(height:12),
+            ClipRRect(
+              borderRadius:BorderRadius.circular(9),
+              child:LinearProgressIndicator(
+                minHeight:8,
+                value:(collected/targetTotal).clamp(0.0,1.0),
+                backgroundColor:scheme.surfaceContainerHighest,
+              ),
+            ),
+            const SizedBox(height:6),
+            Text(l.fundTargetTotal+': '+money(targetTotal),
+              style:Theme.of(context).textTheme.bodySmall),
+          ],
         ]))),
       const SizedBox(height:12),
       for(final member in widget.members) ...[
@@ -216,11 +229,30 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
             child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
               Text(name(id),style:Theme.of(ctx).textTheme.titleMedium),
               const SizedBox(height:6),
-              Text(l.fundTargetTotal+': '+money(target(id))),
-              Text(l.fundTotalReceived+': '+money(received(id))),
-              Text(l.fundOutstandingToCollect+': '+money(due>0?due:0)),
-              if(refunded(id)>0)
-                Text(l.fundRefunded+': '+money(refunded(id))),
+              Row(children:[
+                Expanded(child:Text(l.fundTotalReceived+': '+
+                  money(received(id)))),
+                if(due>0)
+                  Text(l.fundOutstandingToCollect+': '+money(due),
+                    style:TextStyle(color:scheme.error,
+                      fontWeight:FontWeight.w600))
+                else if(target(id)>0)
+                  Icon(Icons.check_circle_rounded,
+                    color:scheme.primary,size:20),
+              ]),
+              if(target(id)>0) ...[
+                const SizedBox(height:7),
+                ClipRRect(borderRadius:BorderRadius.circular(8),
+                  child:LinearProgressIndicator(
+                    minHeight:5,
+                    value:(received(id)/target(id)).clamp(0.0,1.0),
+                    backgroundColor:scheme.surfaceContainerHighest)),
+              ],
+              if(refunded(id)>0) ...[
+                const SizedBox(height:5),
+                Text(l.fundRefunded+': '+money(refunded(id)),
+                  style:Theme.of(ctx).textTheme.bodySmall),
+              ],
               if(widget.isOwner) ...[
                 const SizedBox(height:10),
                 Row(children:[
@@ -249,8 +281,15 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
         const SizedBox(height:8),
       ],
       const SizedBox(height:18),
-      LuiSectionHeading(title:l.fundTopUpRequests),
-      const SizedBox(height:8),
+      Card(child:ExpansionTile(
+        shape:const RoundedRectangleBorder(side:BorderSide.none),
+        collapsedShape:const RoundedRectangleBorder(side:BorderSide.none),
+        leading:const Icon(Icons.notifications_none_rounded),
+        title:Text(l.fundTopUpRequests),
+        subtitle:Text(l.fundRequestCount(requests.where(
+          (r)=>r['cancelled_at']==null).length)),
+        childrenPadding:const EdgeInsets.fromLTRB(12,0,12,12),
+        children:[
       if(requests.isEmpty)Text(l.fundNoRequests,
         style:Theme.of(context).textTheme.bodySmall),
       for(final req in requests) ...[
@@ -269,9 +308,16 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
         )),
         const SizedBox(height:6),
       ],
-      const SizedBox(height:20),
-      LuiSectionHeading(title:l.fundRefundHistory),
-      const SizedBox(height:8),
+      ])),
+      const SizedBox(height:12),
+      Card(child:ExpansionTile(
+        shape:const RoundedRectangleBorder(side:BorderSide.none),
+        collapsedShape:const RoundedRectangleBorder(side:BorderSide.none),
+        leading:const Icon(Icons.undo_outlined),
+        title:Text(l.fundRefundHistory),
+        subtitle:Text(l.fundRefundCount(refunds.length)),
+        childrenPadding:const EdgeInsets.fromLTRB(12,0,12,12),
+        children:[
       if(refunds.isEmpty)Text(l.fundNoRefunds,
         style:Theme.of(context).textTheme.bodySmall),
       for(final refundRecord in refunds) ...[
@@ -284,28 +330,41 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
         )),
         const SizedBox(height:6),
       ],
-      const SizedBox(height:20),
-      LuiSectionHeading(title:l.fundClosingPreview),
-      const SizedBox(height:10),
-      Card(child:Padding(padding:const EdgeInsets.all(16),
-        child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      ])),
+      const SizedBox(height:12),
+      Card(child:ExpansionTile(
+        shape:const RoundedRectangleBorder(side:BorderSide.none),
+        collapsedShape:const RoundedRectangleBorder(side:BorderSide.none),
+        leading:const Icon(Icons.fact_check_outlined),
+        title:Text(l.fundClosingPreview),
+        childrenPadding:const EdgeInsets.fromLTRB(16,0,16,18),
+        children:[
           summaryLine(l.fundTotalReceived,money(collected)),
           summaryLine(l.fundTotalSpent,money(spent)),
           summaryLine(l.fundRefunded,money(totalRefunds)),
           const Divider(),
           summaryLine(l.fundBalance,money(balance)),
           const SizedBox(height:10),
-          Text(l.fundClosingNotFinal,
+          Text(l.fundClosingNotFinalShort,
             style:Theme.of(context).textTheme.bodySmall),
           if(!FundReconciliation.reconciles(
               contributions:collected,purchases:spent,
               refunds:totalRefunds,balance:balance))
             Text(l.fundReconciliationMismatch,
               style:TextStyle(color:scheme.error)),
-        ]),
+        ],
       )),
     ]);
   }
+
+  Widget _fundMetric(String label,String value)=>Column(
+    crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Text(label,style:Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height:5),
+      Text(value,style:Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight:FontWeight.w700)),
+    ]);
+
   Widget summaryLine(String label,String amount)=>Padding(
     padding:const EdgeInsets.symmetric(vertical:4),
     child:Row(children:[
