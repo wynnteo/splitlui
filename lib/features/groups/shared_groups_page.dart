@@ -10,6 +10,7 @@ import '../expenses/shared_expenses_page.dart';
 import '../expenses/offline_expense_outbox.dart';
 import '../fund/common_fund_page.dart';
 import '../settlement/settlement_page.dart';
+import '../reports/trip_closing_report_page.dart';
 import '../../ui/lui_style.dart';
 import 'group_invite_message.dart';
 
@@ -568,6 +569,23 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
                 settlementCurrency: group['settlement_currency'] as String,
                 exchangeRate: (group['exchange_rate'] as num).toDouble(),
                 members: members,
+              ),
+            )),
+        ),
+        const SizedBox(height:12),
+        LuiFeatureTile(
+          icon:Icons.description_outlined,
+          title:l.tripReportTitle,
+          subtitle:l.tripReportEntryHint,
+          onTap:busy || error!=null || members.isEmpty ? null : ()=>
+            Navigator.push(context,MaterialPageRoute(
+              builder:(_)=>TripClosingReportPage(
+                groupId:group['id'] as String,
+                groupName:group['name'] as String,
+                spendingCurrency:group['spending_currency'] as String,
+                settlementCurrency:group['settlement_currency'] as String,
+                exchangeRate:(group['exchange_rate'] as num).toDouble(),
+                members:members,
               ),
             )),
         ),
