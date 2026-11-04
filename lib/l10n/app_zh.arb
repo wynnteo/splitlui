@@ -215,5 +215,6 @@
   "fundRefundHistory": "已确认退款记录",
   "fundNoRefunds": "暂无已确认的退款。",
   "repaymentActualReceivedHint": "请输入实际收到的金额。可以是凑整金额或部分还款。",
-  "settlementMoreDetails": "查看更多详情"
+  "settlementMoreDetails": "查看更多详情",
+  "repaymentSettleFull": "这笔还款已全部结清"
 }
