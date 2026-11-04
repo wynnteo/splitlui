@@ -20,14 +20,15 @@ class TripClosingReportApi {
   final SupabaseClient db;
 
   Future<List<Map<String,dynamic>>> _all(String table,String columns,
-      String groupId) async {
+      String groupId,{String orderBy='id',String? secondOrder}) async {
     const batch=500;
     final rows=<Map<String,dynamic>>[];
     var start=0;
     while(true) {
-      final response=await db.from(table).select(columns)
-        .eq('group_id',groupId)
-        .order('id',ascending:true).range(start,start+batch-1);
+      var query=db.from(table).select(columns)
+        .eq('group_id',groupId).order(orderBy,ascending:true);
+      if(secondOrder!=null) query=query.order(secondOrder,ascending:true);
+      final response=await query.range(start,start+batch-1);
       final page=(response as List)
         .map((e)=>Map<String,dynamic>.from(e as Map)).toList();
       rows.addAll(page);
@@ -52,8 +53,8 @@ class TripClosingReportApi {
       _all('trip_expenses',
         'id,title,amount,currency,amount_spending,paid_by,created_at',
         groupId),
-      _all('trip_expense_shares','id,expense_id,user_id,share_spending',
-        groupId),
+      _all('trip_expense_shares','expense_id,user_id,share_spending',
+        groupId,orderBy:'expense_id',secondOrder:'user_id'),
       _all('trip_repayments',
         'id,from_user_id,to_user_id,amount_spending,paid_amount,paid_currency,note,created_at,reversed_at,reversal_reason',
         groupId),
@@ -63,7 +64,7 @@ class TripClosingReportApi {
       _all('trip_fund_refunds',
         'id,member_id,amount,note,created_at',groupId),
       _all('trip_fund_targets',
-        'group_id,member_id,target_amount',groupId),
+        'group_id,member_id,target_amount',groupId,orderBy:'member_id'),
       db.from('trip_fund_accounts').select('balance')
         .eq('group_id',groupId).maybeSingle(),
       if(includeReceipts)
