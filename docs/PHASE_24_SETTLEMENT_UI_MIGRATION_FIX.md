@@ -54,8 +54,8 @@ Do NOT run `DROP TABLE` on the production Common Fund tables.
   off for a *partial payment*.
 - The new `record_trip_repayment_agreed` RPC records the original cash
   amount/currency regardless of rounding. A full confirmation clears the
-  suggested outstanding net debt; a partial confirmation credits no more
-  than the actual converted amount. Ledger credit can never exceed either
+  **selected suggested transfer amount** (not everyone's combined debts);
+  a partial confirmation credits no more than the actual converted amount. Ledger credit cannot exceed the selected transfer or either
   party's outstanding net debt; accidental excess payment does not create
   a negative new debt. A receipt cannot be recorded if no net debt exists.
 - Existing older clients can continue using the seven-argument
