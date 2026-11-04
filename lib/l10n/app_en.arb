@@ -238,5 +238,9 @@
   "splitModeShares": "Shares",
   "splitEditHint": "Enter each person's amount, percentage or number of shares. The total must match the bill.",
   "splitAllocationValid": "Split total matches the bill",
-  "splitAllocationInvalid": "Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%."
+  "splitAllocationInvalid": "Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%.",
+  "receiptSuggestionsTitle": "Detected on receipt",
+  "receiptSuggestionsSubtitle": "Tap a suggestion to use it. Please check everything before saving.",
+  "receiptMultipleTotalsWarning": "More than one possible total was found. Choose the amount on your receipt.",
+  "receiptNoTotalFound": "No clear total found. Enter the amount manually."
 }
