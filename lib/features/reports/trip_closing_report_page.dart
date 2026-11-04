@@ -91,7 +91,7 @@ class _TripClosingReportPageState extends State<TripClosingReportPage> {
                 style:Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height:14),
               SwitchListTile.adaptive(
-                value:includeReceipts && !exporting,
+                value:includeReceipts,
                 contentPadding:EdgeInsets.zero,
                 onChanged:exporting?null:
                   (v)=>setState(()=>includeReceipts=v),
