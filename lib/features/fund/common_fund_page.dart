@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'advanced_fund_section.dart';
+import '../groups/group_paged_query.dart';
 
 /// V1: a manual ledger, not a payment processor. A contribution records money
 /// physically received; a fund expense reduces pooled money and is not split.
@@ -17,11 +18,9 @@ class CommonFundApi {
   }
 
   Future<List<Map<String, dynamic>>> entries(String groupId) async {
-    final data = await db.from('trip_fund_entries')
-        .select('id,entry_type,amount,member_id,description,recorded_by,created_at')
-        .eq('group_id', groupId).order('created_at', ascending: false);
-    return (data as List)
-        .map((item) => Map<String, dynamic>.from(item as Map)).toList();
+    return GroupPagedQuery(db).read(
+      table:'trip_fund_entries',groupId:groupId,
+      columns:'id,entry_type,amount,member_id,description,recorded_by,created_at');
   }
 
   Future<void> record({
