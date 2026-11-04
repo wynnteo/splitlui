@@ -6,12 +6,15 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'receipt_hints.dart';
+import 'receipt_total_detector.dart';
 
 class ReceiptDraft {
-  const ReceiptDraft(this.jpeg, this.suggestedTotal, this.hints);
+  const ReceiptDraft(this.jpeg, this.suggestedTotal, this.hints,
+    this.totalAnalysis);
   final Uint8List jpeg;
   final String? suggestedTotal;
   final ReceiptHints hints;
+  final ReceiptTotalAnalysis totalAnalysis;
 }
 
 /// OCR hints are not trusted accounting values; always require user review.
@@ -39,39 +42,15 @@ class ReceiptCapture {
     } finally {
       await recogniser.close();
     }
+    final totals=ReceiptTotalDetector.parse(text);
     return ReceiptDraft(Uint8List.fromList(compressed),
-      extractTotal(text), ReceiptHints.parse(text));
+      totals.ambiguous ? null : totals.suggested?.amount,
+      ReceiptHints.parse(text), totals);
   }
 
   static String? extractTotal(String text) {
-    final values = RegExp(r'(?<!\d)(\d{1,8}[.,]\d{2})(?!\d)');
-    double? best;
-    var bestScore = -100;
-    for (final raw in text.split('\n')) {
-      final line = raw.toUpperCase();
-      if (RegExp(r'\b(SUBTOTAL|SUB TOTAL|CHANGE|CASH BACK)\b')
-          .hasMatch(line)) continue;
-      var score = 0;
-      if (RegExp(r'\b(GRAND TOTAL|TOTAL DUE|AMOUNT DUE|NET TOTAL)\b')
-          .hasMatch(line)) {
-        score = 10;
-      } else if (RegExp(r'\b(TOTAL|AMOUNT|PAID)\b').hasMatch(line)) {
-        score = 5;
-      }
-      if (RegExp(r'\b(TAX|GST|VAT|TIP|SERVICE CHARGE)\b')
-          .hasMatch(line)) score -= 5;
-      for (final match in values.allMatches(line)) {
-        final value = double.tryParse(
-          match.group(1)!.replaceAll(',', '.'));
-        if (value == null || !value.isFinite || value <= 0) continue;
-        if (score > bestScore || (score == bestScore &&
-            (best == null || value > best))) {
-          best = value;
-          bestScore = score;
-        }
-      }
-    }
-    return best != null && bestScore >= 5 ? best.toStringAsFixed(2) : null;
+    final analysis=ReceiptTotalDetector.parse(text);
+    return analysis.ambiguous ? null : analysis.suggested?.amount;
   }
 }
 
