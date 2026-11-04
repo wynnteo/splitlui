@@ -26,7 +26,7 @@ class OfflineExpenseOutbox {
   final _uuid = const Uuid();
   Database? _database;
   Future<Database>? _opening;
-  bool _syncing = false;
+  final Set<String> _syncingGroups = <String>{};
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -232,9 +232,9 @@ class OfflineExpenseOutbox {
   /// An immutable expense is committed at most once by its operation UUID.
   /// A receipt failure must NOT block unrelated queued expenses.
   Future<void> sync(String groupId) async {
-    if (_syncing) return;
     final owner = _userId;
-    _syncing = true;
+    final syncKey = '$owner/$groupId';
+    if (!_syncingGroups.add(syncKey)) return;
     try {
       final db = await database;
       final rows = await db.query('offline_expenses',
@@ -312,7 +312,7 @@ class OfflineExpenseOutbox {
         }
       }
     } finally {
-      _syncing=false;
+      _syncingGroups.remove(syncKey);
     }
   }
 
