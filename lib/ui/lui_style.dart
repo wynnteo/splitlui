@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
 /// SplitLui's visual language: quiet surfaces, crisp type and a restrained
-/// playful lavender accent with neutral dark surfaces.
+/// retain the light design; use lavender on neutral charcoal in dark mode.
 abstract final class LuiStyle {
   static const ink = Color(0xFF172A41);
-  static const blue = Color(0xFF8471C5); // Legacy alias for soft lavender.
+  static const blue = Color(0xFF138C7C); // Existing light-mode accent.
   static const teal = blue;
-  static const canvas = Color(0xFFFAF8FF);
-  static const line = Color(0xFFE8E2F2);
+  static const canvas = Color(0xFFF4FAF8);
+  static const line = Color(0xFFDDECE6);
 
   static ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colorScheme = ColorScheme.fromSeed(
       seedColor: blue,
       brightness: brightness,
-      primary: dark ? const Color(0xFFC8B6FF) : blue,
+      primary: dark ? const Color(0xFFC8B6FF) : teal,
       surface: dark ? const Color(0xFF262430) : Colors.white,
     );
     return ThemeData(
