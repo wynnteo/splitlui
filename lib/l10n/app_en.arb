@@ -216,5 +216,15 @@
   "fundNoRefunds": "No refunds confirmed yet.",
   "repaymentActualReceivedHint": "Enter the amount you actually received. A rounded or partial payment is fine.",
   "settlementMoreDetails": "More details",
-  "repaymentSettleFull": "This payment settles the full amount"
+  "repaymentSettleFull": "This payment settles the full amount",
+  "tripReportTitle": "Trip closing report",
+  "tripReportEntryHint": "Share a summary of expenses, Common Fund and repayments",
+  "tripReportIntro": "Create a PDF snapshot of your trip records. Nothing is closed or paid automatically.",
+  "tripReportIncludes": "What's included",
+  "tripReportContents": "Original-currency spending, combined estimates, remaining repayments, Common Fund contributions, refunds, outstanding targets and reconciliation checks.",
+  "tripReportIncludeReceipts": "Include receipt photos",
+  "tripReportReceiptNotice": "Optional · Up to 8 receipts. Anyone you send the PDF to can keep the images.",
+  "tripReportWarning": "Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.",
+  "tripReportGenerating": "Preparing PDF…",
+  "tripReportSharePdf": "Create and share PDF"
 }
