@@ -118,7 +118,16 @@ class ReceiptStorage {
         'p_fund_entry':fundEntryId, 'p_object_path':path,
       });
     } catch (_) {
-      try { await db.storage.from(bucket).remove([path]); } catch (_) {}
+      // The RPC may have succeeded server-side even though the response was
+      // lost. Do NOT delete the uploaded image here: a committed mapping
+      // might now point to it. Offline sync checks the existing mapping
+      // before uploading again. Orphan cleanup must be a separate,
+      // explicitly reconciled maintenance operation.
+      try {
+        final linked = await get(
+          expenseId:expenseId,fundEntryId:fundEntryId);
+        if (linked?['object_path'] == path) return;
+      } catch (_) { /* Keep the object until it can be reconciled. */ }
       rethrow;
     }
   }
