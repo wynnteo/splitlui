@@ -231,5 +231,12 @@
   "offlineSkipReceiptWarning": "这笔开销已记录到群组。确定停止上传照片吗？本机照片将被删除，但不会删除或修改开销。",
   "offlineExpenseAlreadySaved": "开销已确认，只有收据照片尚未上传。",
   "offlineSyncProblem": "同步详情",
-  "offlineReceiptsHeading": "收据照片等待上传"
+  "offlineReceiptsHeading": "收据照片等待上传",
+  "splitModeEqual": "平均分摊",
+  "splitModeAmount": "指定金额",
+  "splitModePercent": "百分比",
+  "splitModeShares": "份数",
+  "splitEditHint": "填写每个人的金额、百分比或份数。分摊总额必须与账单一致。",
+  "splitAllocationValid": "分摊金额与账单一致",
+  "splitAllocationInvalid": "请检查金额及分摊数值。指定金额须等于账单总额，百分比须合计 100%。"
 }
