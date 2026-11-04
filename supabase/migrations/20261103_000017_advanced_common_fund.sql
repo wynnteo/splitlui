@@ -89,7 +89,7 @@ grant execute on function public.set_trip_fund_target(uuid,uuid,numeric)
 
 -- Requests are communication, not incoming funds. Owner can cancel one.
 create or replace function public.request_trip_fund_topup(
-  p_group uuid,p_member uuid,p_amount numeric,p_note text,p_operation uuid
+  p_group uuid,p_member uuid,p_amount numeric,p_note text
 ) returns uuid language plpgsql security definer
 set search_path = '' as $$
 declare new_id uuid;
