@@ -243,5 +243,11 @@
   "receiptSuggestionsSubtitle": "点击建议值即可填入，保存前请确认所有资料。",
   "receiptMultipleTotalsWarning": "检测到多个可能的总金额，请根据收据选择正确金额。",
   "receiptNoTotalFound": "无法确定总金额，请手动输入。",
-  "receiptAmbiguousDateWarning": "日期可能是日/月或月/日格式，请确认后再采用。"
+  "receiptAmbiguousDateWarning": "日期可能是日/月或月/日格式，请确认后再采用。",
+  "fundAddContributionShort": "加入资金",
+  "fundPayExpenseShort": "支付开销",
+  "fundManualNoticeShort": "只记录实际收到或已支付的金额。",
+  "fundOpenRequests": "笔待处理请求",
+  "fundRefundRecords": "笔已确认退款",
+  "fundClosingNotFinalShort": "仅供预览，不会转账或关闭群组。"
 }

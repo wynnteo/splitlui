@@ -160,10 +160,7 @@ class _CommonFundPageState extends State<CommonFundPage> {
       body: SafeArea(top: false, child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
-          Text(widget.groupName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           Card(child: Padding(
             padding: const EdgeInsets.all(22),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -193,22 +190,27 @@ class _CommonFundPageState extends State<CommonFundPage> {
               ],
             ]),
           )),
-          const SizedBox(height: 10),
-          Text(l.fundManualNotice,
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(child: FilledButton.icon(
+              onPressed: busy ? null : () => addEntry(true),
+              icon: const Icon(Icons.add_circle_outline, size: 19),
+              label: Text(l.fundAddContributionShort,
+                textAlign: TextAlign.center),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: busy ? null : () => addEntry(false),
+              icon: const Icon(Icons.receipt_long_outlined, size: 19),
+              label: Text(l.fundPayExpenseShort,
+                textAlign: TextAlign.center),
+            )),
+          ]),
+          const SizedBox(height: 9),
+          Text(l.fundManualNoticeShort,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 22),
-          FilledButton.icon(
-            onPressed: busy ? null : () => addEntry(true),
-            icon: const Icon(Icons.add_circle_outline),
-            label: Text(l.fundAddContribution),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: busy ? null : () => addEntry(false),
-            icon: const Icon(Icons.receipt_long_outlined),
-            label: Text(l.fundPayExpense),
-          ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 24),
           if (!busy && error == null) ...[
             AdvancedFundSection(
               groupId:widget.groupId,
