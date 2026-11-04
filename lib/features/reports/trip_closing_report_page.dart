@@ -49,6 +49,7 @@ class _TripClosingReportPageState extends State<TripClosingReportPage> {
         settlementCurrency:widget.settlementCurrency,
         exchangeRate:widget.exchangeRate,
         memberNames:names,includeReceipts:includeReceipts,
+        chinese:Localizations.localeOf(context).languageCode=='zh',
       );
       final temp=await getTemporaryDirectory();
       final filename='splitlui_trip_'+DateTime.now()
