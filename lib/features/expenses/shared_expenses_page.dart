@@ -473,8 +473,9 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     await showModalBottomSheet<void>(
       context:context,isScrollControlled:true,useSafeArea:true,
       showDragHandle:true,
-      builder:(sheetContext)=>FractionallySizedBox(
-        heightFactor:0.66,
+      builder:(sheetContext)=>ConstrainedBox(
+        constraints:BoxConstraints(
+          maxHeight:MediaQuery.sizeOf(sheetContext).height*0.78),
         child:SingleChildScrollView(
           padding:const EdgeInsets.fromLTRB(20,4,20,32),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -1047,7 +1048,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
               ]),
           )),
           const SizedBox(height: 22),
-          LuiFormLabel(l.paidBy),
+          if (!payFromFund) LuiFormLabel(l.paidBy),
           if (widget.initialExpense == null &&
               !fundLoading && (fundAvailable ?? 0) > 0) ...[
             Card(child: SwitchListTile.adaptive(
@@ -1096,11 +1097,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           Text(l.equalSplitOnly,
             style: Theme.of(context).textTheme.bodySmall),
           ],
-          if (payFromFund) ...[
-            const SizedBox(height: 12),
-            Text(l.expenseFundNoSplit,
-              style: Theme.of(context).textTheme.bodySmall),
-          ],
+
           if (expenseCurrency != widget.currency) ...[
             const SizedBox(height: 8),
             Text(l.expenseConversionHint,

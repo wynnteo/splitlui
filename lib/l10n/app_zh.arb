@@ -213,5 +213,8 @@
   "fundReconciliationMismatch": "提醒：当前基金余额与已收贡献、支出和已确认退款不一致。",
   "fundAdvancedLoadError": "无法载入基金目标和退款资料，请检查网络及 Supabase 数据库迁移。",
   "fundRefundHistory": "已确认退款记录",
-  "fundNoRefunds": "暂无已确认的退款。"
+  "fundNoRefunds": "暂无已确认的退款。",
+  "repaymentActualReceivedHint": "请输入实际收到的金额。可以是凑整金额或部分还款。",
+  "settlementMoreDetails": "查看更多详情",
+  "repaymentSettleFull": "这笔还款已全部结清"
 }

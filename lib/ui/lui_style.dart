@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 /// SplitLui's visual language: quiet surfaces, crisp type and a restrained
-/// rich teal accent. Keep this independent of persistence and group logic.
+/// retain the light design; use lavender on neutral charcoal in dark mode.
 abstract final class LuiStyle {
   static const ink = Color(0xFF172A41);
-  static const blue = Color(0xFF138C7C); // Legacy name; brand teal, not Bootstrap blue.
+  static const blue = Color(0xFF138C7C); // Existing light-mode accent.
   static const teal = blue;
   static const canvas = Color(0xFFF4FAF8);
   static const line = Color(0xFFDDECE6);
@@ -12,17 +12,20 @@ abstract final class LuiStyle {
   static ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: blue,
+      seedColor: dark ? const Color(0xFF9A87CA) : blue,
       brightness: brightness,
-      primary: dark ? const Color(0xFF68DDC5) : teal,
-      surface: dark ? const Color(0xFF172C2A) : Colors.white,
+      primary: dark ? const Color(0xFFC8B6FF) : teal,
+      surface: dark ? const Color(0xFF262430) : Colors.white,
+    ).copyWith(
+      surfaceContainer: dark ? const Color(0xFF2D2A37) : null,
+      surfaceContainerHighest: dark ? const Color(0xFF383442) : null,
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF101D1C) : canvas,
+      scaffoldBackgroundColor: dark ? const Color(0xFF191820) : canvas,
       appBarTheme: AppBarTheme(
-        backgroundColor: dark ? const Color(0xFF101D1C) : canvas,
+        backgroundColor: dark ? const Color(0xFF191820) : canvas,
         foregroundColor: colorScheme.onSurface,
         centerTitle: false,
         elevation: 0,
@@ -40,7 +43,7 @@ abstract final class LuiStyle {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: dark ? const Color(0xFF31524B) : line),
+          side: BorderSide(color: dark ? const Color(0xFF45404F) : line),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -48,9 +51,9 @@ abstract final class LuiStyle {
         fillColor: colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: dark ? const Color(0xFF30445E) : line)),
+          borderSide: BorderSide(color: dark ? const Color(0xFF45404F) : line)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: dark ? const Color(0xFF30445E) : line)),
+          borderSide: BorderSide(color: dark ? const Color(0xFF45404F) : line)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: colorScheme.primary, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
@@ -63,8 +66,8 @@ abstract final class LuiStyle {
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        side: BorderSide(color: dark ? const Color(0xFF30445E) : line))),
-      dividerTheme: DividerThemeData(color: dark ? const Color(0xFF30445E) : line),
+        side: BorderSide(color: dark ? const Color(0xFF45404F) : line))),
+      dividerTheme: DividerThemeData(color: dark ? const Color(0xFF45404F) : line),
     );
   }
 }
@@ -111,8 +114,8 @@ class LuiFeatureTile extends StatelessWidget {
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(13)),
+              color: scheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(22)),
             child: Icon(icon, color: scheme.primary, size: 22)),
           const SizedBox(width: 14),
           Expanded(child: Column(

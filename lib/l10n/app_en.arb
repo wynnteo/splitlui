@@ -213,5 +213,8 @@
   "fundReconciliationMismatch": "Warning: fund balance does not reconcile with received contributions, purchases and confirmed refunds.",
   "fundAdvancedLoadError": "Could not load fund targets and refunds. Check your connection and Supabase migration.",
   "fundRefundHistory": "Confirmed refunds",
-  "fundNoRefunds": "No refunds confirmed yet."
+  "fundNoRefunds": "No refunds confirmed yet.",
+  "repaymentActualReceivedHint": "Enter the amount you actually received. A rounded or partial payment is fine.",
+  "settlementMoreDetails": "More details",
+  "repaymentSettleFull": "This payment settles the full amount"
 }
