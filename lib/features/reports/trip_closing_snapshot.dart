@@ -81,7 +81,8 @@ class TripClosingSnapshot {
       fundSpentCents:FundReconciliation.sumEntries(fundEntries,'expense'),
       fundRefundsCents:FundReconciliation.sumRefunds(fundRefunds),
       fundBalanceCents:fundBalanceCents,
-      fundTargetCents:targetByMember.values.fold(0,(a,b)=>a+b),
+      fundTargetCents:memberIds.fold(0,(int total,id)=>
+        total+(targetByMember[id]??0)),
       fundOutstandingCents:outstanding,
       activeRepayments:active.length,
       reversedRepayments:repayments.length-active.length,
