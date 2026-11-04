@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/groups/shared_groups_page.dart';
 import 'features/settlement/repayment_preferences.dart';
+import 'features/pro/pro_preview_page.dart';
 import 'ui/lui_style.dart';
 import 'l10n/generated/app_localizations.dart';
 
@@ -580,6 +581,26 @@ class _SettingsState extends State<Settings> {
           onChanged: (value) {
             if (value != null) choosePreferredCurrency(value);
           },
+        ),
+        const SizedBox(height: 30),
+        sectionHeader(
+          selectedLanguage == 'zh' ? 'SplitLui Pro' : 'SplitLui Pro',
+          selectedLanguage == 'zh'
+              ? '查看高级功能及未来的订阅方案。购买功能尚未开放。'
+              : 'Explore premium features and upcoming plans. Purchases are not available yet.',
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.workspace_premium_outlined),
+            title: const Text('SplitLui Pro'),
+            subtitle: Text(selectedLanguage == 'zh'
+                ? '月付、年付或一次性永久解锁'
+                : 'Monthly, yearly or lifetime unlock'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => ProPreviewPage(
+                language: selectedLanguage))),
+          ),
         ),
         const SizedBox(height: 34),
         Center(child: Text(l.version,
