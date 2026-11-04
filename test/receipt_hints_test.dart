@@ -27,4 +27,27 @@ void main() {
       'TAX INVOICE\nMY COFFEE SHOP\nAMOUNT DUE 20.00').merchant,
       'MY COFFEE SHOP');
   });
+  test('US dollar marker must not be mistaken for Singapore dollars', () {
+    expect(ReceiptHints.parse(r'COFFEE STAND\nTOTAL US$25.00'
+      .replaceAll(r'\n','\n')).currency,'USD');
+    expect(ReceiptHints.parse(r'COFFEE STAND\nTOTAL S$25.00'
+      .replaceAll(r'\n','\n')).currency,'SGD');
+  });
+
+  test('Conflicting SGD and MYR amounts require manual currency review', () {
+    final result=ReceiptHints.parse(
+      'SHOP\nTOTAL SGD 30.00\nCARD MYR 100.00');
+    expect(result.currency,isNull);
+  });
+
+  test('A total printed before the merchant is never the merchant', () {
+    expect(ReceiptHints.parse(
+      'RECEIPT\nTOTAL 12.00\nMY LITTLE CAFE\nGST 1.00').merchant,
+      'MY LITTLE CAFE');
+  });
+
+  test('RM directly adjacent to a figure is MYR', () {
+    expect(ReceiptHints.parse('RESTORAN\nTOTAL RM100.00').currency,'MYR');
+  });
+
 }
