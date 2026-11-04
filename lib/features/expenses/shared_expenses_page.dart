@@ -616,7 +616,9 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
               Icon(Icons.cloud_upload_outlined, size: 21,
                 color: scheme.primary),
               const SizedBox(width: 8),
-              Expanded(child: Text(l.offlinePendingHeading,
+              Expanded(child: Text(
+                queuedExpenses.every((item) => item['status']=='receipt_pending')
+                  ? l.offlineReceiptsHeading : l.offlinePendingHeading,
                 style: Theme.of(context).textTheme.titleMedium)),
               TextButton.icon(onPressed: busy ? null : refresh,
                 icon: const Icon(Icons.sync_rounded),
