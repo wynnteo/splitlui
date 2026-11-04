@@ -242,5 +242,6 @@
   "receiptSuggestionsTitle": "Detected on receipt",
   "receiptSuggestionsSubtitle": "Tap a suggestion to use it. Please check everything before saving.",
   "receiptMultipleTotalsWarning": "More than one possible total was found. Choose the amount on your receipt.",
-  "receiptNoTotalFound": "No clear total found. Enter the amount manually."
+  "receiptNoTotalFound": "No clear total found. Enter the amount manually.",
+  "receiptAmbiguousDateWarning": "Date format might be day/month or month/day. Check before applying."
 }
