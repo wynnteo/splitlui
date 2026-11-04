@@ -445,26 +445,40 @@ class _SettlementPageState extends State<SettlementPage> {
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 22),
-            LuiSectionHeading(title: l.settlementMemberBalances),
-            const SizedBox(height: 12),
-            for (final balance in result!.balances) ...[
-              LuiFeatureTile(
-                icon: Icons.person_outline_rounded,
-                title: nameOf(balance.userId),
-                subtitle: balance.cents > 0
-                  ? l.settlementIsOwed
-                  : balance.cents < 0
-                    ? l.settlementOwes
-                    : l.settlementBalanced,
-                trailing: Text(shownAmount(balance.cents.abs()),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: balance.cents == 0
-                      ? colors.onSurfaceVariant : colors.primary,
-                  )),
-              ),
-              const SizedBox(height: 10),
-            ],
+            Card(child:ExpansionTile(
+              leading:const Icon(Icons.receipt_long_outlined),
+              title:Text(l.settlementMoreDetails),
+              childrenPadding:const EdgeInsets.fromLTRB(14,0,14,16),
+              children:[
+                if (expenseSummary != null) ...[
+                  Text(l.settlementTotalExpenses,
+                    style:Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height:8),
+                  for (final item in expenseSummary!.totals)
+                    Padding(padding:const EdgeInsets.symmetric(vertical:4),
+                      child:Row(children:[
+                        Expanded(child:Text(item.currency)),
+                        Text(item.currency + ' ' +
+                          (item.cents/100).toStringAsFixed(2)),
+                      ])),
+                  const Divider(height:24),
+                ],
+                Text(l.settlementMemberBalances,
+                  style:Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height:8),
+                for (final balance in result!.balances)
+                  ListTile(
+                    dense:true,
+                    contentPadding:EdgeInsets.zero,
+                    title:Text(nameOf(balance.userId)),
+                    subtitle:Text(balance.cents>0 ? l.settlementIsOwed
+                      : balance.cents<0 ? l.settlementOwes
+                      : l.settlementBalanced),
+                    trailing:Text(shownAmount(balance.cents.abs()),
+                      style:const TextStyle(fontWeight:FontWeight.w600)),
+                  ),
+              ],
+            )),
             const SizedBox(height: 12),
           ],
         ],
