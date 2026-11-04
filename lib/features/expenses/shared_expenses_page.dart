@@ -1205,13 +1205,81 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                   final id = widget.members[i]['user_id'] as String;
                   if (checked == true) { selected.add(id); }
                   else { selected.remove(id); }
+                  if(splitMode!=ExpenseSplitMode.equal)resetSplitDefaults();
                 }),
               ),
             ],
           ])),
           const SizedBox(height: 12),
-          Text(l.equalSplitOnly,
-            style: Theme.of(context).textTheme.bodySmall),
+          Wrap(spacing:8,runSpacing:5,children:[
+            for(final mode in ExpenseSplitMode.values)
+              ChoiceChip(
+                label:Text(switch(mode) {
+                  ExpenseSplitMode.equal=>l.splitModeEqual,
+                  ExpenseSplitMode.exact=>l.splitModeAmount,
+                  ExpenseSplitMode.percent=>l.splitModePercent,
+                  ExpenseSplitMode.shares=>l.splitModeShares,
+                }),
+                selected:splitMode==mode,
+                onSelected:saving || existingSharesLoading ? null :
+                  (_)=>setSplitMode(mode),
+              ),
+          ]),
+          if(splitMode!=ExpenseSplitMode.equal && splitMemberIds.isNotEmpty) ...[
+            const SizedBox(height:10),
+            Text(l.splitEditHint,
+              style:Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height:10),
+            for(final member in widget.members)
+              if(selected.contains(member['user_id'])) ...[
+                Row(children:[
+                  Expanded(flex:3,child:Text(member['nickname'] as String)),
+                  const SizedBox(width:10),
+                  Expanded(flex:2,child:TextFormField(
+                    key:ValueKey('split-'+splitMode.name+'-'+
+                      (member['user_id'] as String)),
+                    initialValue:splitInputs[member['user_id'] as String]??'',
+                    enabled:!saving && !existingSharesLoading,
+                    keyboardType:const TextInputType.numberWithOptions(
+                      decimal:true),
+                    decoration:InputDecoration(
+                      isDense:true,
+                      suffixText:splitMode==ExpenseSplitMode.percent ? '%' :
+                        splitMode==ExpenseSplitMode.shares ? '×' :
+                          expenseCurrency,
+                    ),
+                    onChanged:(value)=>setState(() {
+                      splitInputs[member['user_id'] as String]=value;
+                    }),
+                  )),
+                ]),
+                const SizedBox(height:8),
+              ],
+          ],
+          const SizedBox(height:8),
+          Builder(builder:(ctx) {
+            try {
+              final result=calculatedShares;
+              return Column(
+                crossAxisAlignment:CrossAxisAlignment.start,children:[
+                  Text(l.splitAllocationValid,
+                    style:TextStyle(color:Theme.of(ctx).colorScheme.primary)),
+                  for(var i=0;i<splitMemberIds.length;i++)
+                    Padding(
+                      padding:const EdgeInsets.only(top:3),
+                      child:Text(
+                        (widget.members.firstWhere((m)=>
+                          m['user_id']==splitMemberIds[i])['nickname']
+                          as String) + ' · ' + expenseCurrency + ' ' +
+                          (result.cents[i]/100).toStringAsFixed(2),
+                        style:Theme.of(ctx).textTheme.bodySmall),
+                    ),
+                ]);
+            }catch(_) {
+              return Text(l.splitAllocationInvalid,
+                style:TextStyle(color:Theme.of(ctx).colorScheme.error));
+            }
+          }),
           ],
 
           if (expenseCurrency != widget.currency) ...[
