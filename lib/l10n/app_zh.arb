@@ -230,5 +230,6 @@
   "offlineSkipReceipt": "跳过收据照片",
   "offlineSkipReceiptWarning": "这笔开销已记录到群组。确定停止上传照片吗？本机照片将被删除，但不会删除或修改开销。",
   "offlineExpenseAlreadySaved": "开销已确认，只有收据照片尚未上传。",
-  "offlineSyncProblem": "同步详情"
+  "offlineSyncProblem": "同步详情",
+  "offlineReceiptsHeading": "收据照片等待上传"
 }
