@@ -230,5 +230,6 @@
   "offlineSkipReceipt": "Skip photo",
   "offlineSkipReceiptWarning": "This expense is already saved for the group. Stop trying to upload its photo? This will delete the local photo copy, but will NOT remove or change the expense.",
   "offlineExpenseAlreadySaved": "The expense is confirmed. Only its receipt photo is waiting to upload.",
-  "offlineSyncProblem": "Sync details"
+  "offlineSyncProblem": "Sync details",
+  "offlineReceiptsHeading": "Receipt photos waiting to upload"
 }
