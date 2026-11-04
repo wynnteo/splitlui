@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../settlement/settlement_calculator.dart';
 import 'trip_closing_report_api.dart';
@@ -13,8 +14,7 @@ class TripClosingPdf {
 
   static String money(String currency,int cents) =>
     currency+' '+(cents/100).toStringAsFixed(2);
-  static String clean(String source) =>
-    source.replaceAll(RegExp(r'[^\u0020-\u007E\u00A0-\u00FF]'),'?');
+  static String clean(String source) => source;
 
   static pw.Widget heading(String title)=>pw.Padding(
     padding:const pw.EdgeInsets.only(top:14,bottom:7),
@@ -44,7 +44,12 @@ class TripClosingPdf {
     required double exchangeRate,
     required Map<String,String> memberNames,
     required bool includeReceipts,
+    bool chinese=false,
   }) async {
+    // Noto Sans SC covers English and Simplified Chinese. The font is
+    // downloaded/cached by printing; a PDF export requires connectivity.
+    final font=await PdfGoogleFonts.notoSansSCRegular();
+    String t(String en,String zh)=>chinese?zh:en;
     final pdf=pw.Document(
       title:'SplitLui Trip Report - '+clean(groupName),author:'SplitLui');
     final snapshot=data.snapshot;
@@ -56,7 +61,7 @@ class TripClosingPdf {
         (cents/100/exchangeRate).toStringAsFixed(2);
 
     final content=<pw.Widget>[
-      pw.Text('TRIP SUMMARY',style:pw.TextStyle(
+      pw.Text(t('TRIP SUMMARY','旅程结算报告'),style:pw.TextStyle(
         color:teal,fontSize:10,letterSpacing:1.5)),
       pw.SizedBox(height:6),
       pw.Text(clean(groupName),style:pw.TextStyle(
@@ -71,65 +76,65 @@ class TripClosingPdf {
           color:PdfColor.fromInt(0xFFEAF7F3),
           borderRadius:pw.BorderRadius.circular(10)),
         child:pw.Column(crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
-          pw.Text(snapshot.needsReview?'ACTION STILL NEEDED':
-            'NO OPEN BALANCES DETECTED',
+          pw.Text(snapshot.needsReview?t('ACTION STILL NEEDED','仍有待处理事项'):
+            t('NO OPEN BALANCES DETECTED','暂无待结余额'),
             style:pw.TextStyle(color:teal,
               fontWeight:pw.FontWeight.bold,fontSize:11)),
           note(snapshot.needsReview ?
             'Review pending sync, outstanding transfers, collection targets and fund reconciliation.' :
             'This does not confirm transfers or formally close the group.'),
         ])),
-      heading('Shared expenses by original currency'),
+      heading(t('Shared expenses by original currency','按原币种统计开销')),
       for(final row in snapshot.expenseSummary.totals)
         line(row.currency+' ('+row.count.toString()+' expenses)',
           money(row.currency,row.cents)),
       pw.Divider(color:PdfColors.grey300),
-      line('Estimated combined spending',
+      line(t('Estimated combined spending','换算后开销总额'),
         money(snapshot.expenseSummary.totalSettlementCurrency,
           snapshot.expenseSummary.totalSettlementCents),strong:true),
       note('Trip rate and saved expense rates are estimates. Common Fund '
         'purchases are tracked separately and never double-counted.'),
-      heading('Who pays whom - remaining suggestions'),
+      heading(t('Who pays whom - remaining suggestions','待结清的还款建议')),
       if(snapshot.settlements.transfers.isEmpty)
-        note('No suggested repayments remain.')
+        note(t('No suggested repayments remain.','暂无待结清还款。'))
       else
         for(final transfer in snapshot.settlements.transfers)
           line(person(transfer.fromUserId)+' pays '+person(transfer.toUserId),
             estimated(transfer.cents)),
       note('These are suggestions, not proof of payment. Members can agree to rounded amounts.'),
-      heading('Member balances'),
+      heading(t('Member balances','成员结算余额')),
       for(final balance in snapshot.settlements.balances)
         line(person(balance.userId),
           balance.cents==0?'Settled':
             balance.cents>0?'To receive: '+estimated(balance.cents):
               'To pay: '+estimated(-balance.cents)),
-      heading('Common Fund - '+spendingCurrency),
-      line('Contributions received',spending(snapshot.fundContributionsCents)),
-      line('Fund purchases',spending(snapshot.fundSpentCents)),
-      line('Confirmed refunds',spending(snapshot.fundRefundsCents)),
+      heading(t('Common Fund - ','共同基金 - ')+spendingCurrency),
+      line(t('Contributions received','已收贡献金额'),spending(snapshot.fundContributionsCents)),
+      line(t('Fund purchases','共同基金支出'),spending(snapshot.fundSpentCents)),
+      line(t('Confirmed refunds','已确认退款'),spending(snapshot.fundRefundsCents)),
       pw.Divider(color:PdfColors.grey300),
-      line('Available fund balance',spending(snapshot.fundBalanceCents),
+      line(t('Available fund balance','共同基金余额'),spending(snapshot.fundBalanceCents),
         strong:true),
-      line('Contribution target',spending(snapshot.fundTargetCents)),
-      line('Still to collect',spending(snapshot.fundOutstandingCents)),
+      line(t('Contribution target','贡献目标'),spending(snapshot.fundTargetCents)),
+      line(t('Still to collect','仍待收取'),spending(snapshot.fundOutstandingCents)),
       if(!snapshot.fundReconciles)
         note('WARNING: Fund balance does not reconcile with received funds, purchases and refunds.'),
-      heading('Repayment confirmations'),
-      line('Confirmed receipts',snapshot.activeRepayments.toString()),
-      line('Reversed receipts',snapshot.reversedRepayments.toString()),
+      heading(t('Repayment confirmations','已确认还款')),
+      line(t('Confirmed receipts','已确认收款'),snapshot.activeRepayments.toString()),
+      line(t('Reversed receipts','已撤销收款'),snapshot.reversedRepayments.toString()),
       for(final row in data.repayments)
         line(person(row['from_user_id'] as String)+' to '+
           person(row['to_user_id'] as String),
           money(row['paid_currency'] as String,
             SettlementCalculator.cents(row['paid_amount']))+
           (row['reversed_at']!=null?' (REVERSED)':' (CONFIRMED)')),
-      heading('Confirmed Common Fund refunds'),
-      if(data.fundRefunds.isEmpty) note('No confirmed refunds.')
+      heading(t('Confirmed Common Fund refunds','已确认的共同基金退款')),
+      if(data.fundRefunds.isEmpty) note(t('No confirmed refunds.','暂无已确认退款。'))
       else for(final row in data.fundRefunds)
         line(person(row['member_id'] as String),
           spending(SettlementCalculator.cents(row['amount']))),
-      heading('Pending and sync checks'),
-      line('Pending expenses on this device',
+      heading(t('Pending and sync checks','待同步事项')),
+      line(t('Pending expenses on this device','本机待同步开销'),
         snapshot.pendingLocalCount.toString()),
       if(snapshot.pendingLocalCount>0)
         note('Some expenses on this device have not synced; other members may have unsynced expenses too.'),
@@ -143,7 +148,7 @@ class TripClosingPdf {
     // member's permission. Limit count and size on mobile devices.
     var count=0,skipped=0;
     if(includeReceipts && data.receipts.isNotEmpty) {
-      content.add(heading('Receipt photos (up to 8)'));
+      content.add(heading(t('Receipt photos (up to 8)','收据照片（最多8张）')));
       for(final receipt in data.receipts) {
         if(count>=8){skipped++;continue;}
         try {
@@ -168,6 +173,7 @@ class TripClosingPdf {
 
     pdf.addPage(pw.MultiPage(
       pageFormat:PdfPageFormat.a4,
+      theme:pw.ThemeData.withFont(base:font,bold:font),
       margin:const pw.EdgeInsets.fromLTRB(36,38,36,42),
       maxPages:250,
       footer:(context)=>pw.Align(alignment:pw.Alignment.centerRight,
