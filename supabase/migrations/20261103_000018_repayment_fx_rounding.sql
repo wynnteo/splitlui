@@ -126,7 +126,8 @@ create or replace function public.record_trip_repayment_agreed(
   p_currency text,
   p_rate_to_spending numeric,
   p_note text,
-  p_settle_full boolean
+  p_settle_full boolean,
+  p_suggested_spending numeric
 ) returns uuid language plpgsql security definer
 set search_path = '' as $$
 declare
@@ -158,6 +159,11 @@ begin
   end if;
   if p_settle_full is null then
     raise exception 'Full or partial settlement selection required';
+  end if;
+  if p_suggested_spending is null or p_suggested_spending <= 0
+    or p_suggested_spending > 99999999999999.99
+    or p_suggested_spending != round(p_suggested_spending,2) then
+    raise exception 'Invalid suggested settlement';
   end if;
   if p_note is null or char_length(p_note)>120 then
     raise exception 'Invalid note';
@@ -217,8 +223,8 @@ begin
   -- A rounded agreed final transfer can clear the current suggested debt.
   -- A partial transfer only credits its converted actual value.
   ledger_credit := case when p_settle_full then
-    least(-debtor_net,creditor_net)
-    else least(converted,-debtor_net,creditor_net) end;
+    least(p_suggested_spending,-debtor_net,creditor_net)
+    else least(converted,p_suggested_spending,-debtor_net,creditor_net) end;
   if ledger_credit<=0 then
     raise exception 'No positive debt remains to settle';
   end if;
@@ -235,6 +241,6 @@ begin
 end; $$;
 
 revoke all on function public.record_trip_repayment_agreed(
- uuid,uuid,uuid,numeric,text,numeric,text,boolean) from public;
+ uuid,uuid,uuid,numeric,text,numeric,text,boolean,numeric) from public;
 grant execute on function public.record_trip_repayment_agreed(
- uuid,uuid,uuid,numeric,text,numeric,text,boolean) to authenticated;
+ uuid,uuid,uuid,numeric,text,numeric,text,boolean,numeric) to authenticated;
