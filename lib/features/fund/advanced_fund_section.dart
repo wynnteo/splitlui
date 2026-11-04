@@ -286,8 +286,9 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
         collapsedShape:const RoundedRectangleBorder(side:BorderSide.none),
         leading:const Icon(Icons.notifications_none_rounded),
         title:Text(l.fundTopUpRequests),
-        subtitle:Text(l.fundRequestCount(requests.where(
-          (r)=>r['cancelled_at']==null).length)),
+        subtitle:Text(requests.where(
+          (r)=>r['cancelled_at']==null).length.toString()+' '+
+          l.fundOpenRequests),
         childrenPadding:const EdgeInsets.fromLTRB(12,0,12,12),
         children:[
       if(requests.isEmpty)Text(l.fundNoRequests,
@@ -315,7 +316,7 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
         collapsedShape:const RoundedRectangleBorder(side:BorderSide.none),
         leading:const Icon(Icons.undo_outlined),
         title:Text(l.fundRefundHistory),
-        subtitle:Text(l.fundRefundCount(refunds.length)),
+        subtitle:Text(refunds.length.toString()+' '+l.fundRefundRecords),
         childrenPadding:const EdgeInsets.fromLTRB(12,0,12,12),
         children:[
       if(refunds.isEmpty)Text(l.fundNoRefunds,
