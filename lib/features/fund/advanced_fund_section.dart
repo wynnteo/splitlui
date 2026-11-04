@@ -223,17 +223,25 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
                 Text(l.fundRefunded+': '+money(refunded(id))),
               if(widget.isOwner) ...[
                 const SizedBox(height:10),
-                Wrap(spacing:6,runSpacing:6,children:[
-                  OutlinedButton(
+                Row(children:[
+                  Expanded(child:OutlinedButton(
                     onPressed:()=>setTarget(id),
-                    child:Text(l.fundTargetSet)),
-                  if(due>0)TextButton(
+                    child:Text(l.fundTargetSet,
+                      textAlign:TextAlign.center))),
+                  const SizedBox(width:8),
+                  Expanded(child:OutlinedButton(
                     onPressed:()=>requestTopup(id),
-                    child:Text(l.fundTopUpRequest)),
-                  if(net>0)TextButton(
-                    onPressed:()=>refund(id),
-                    child:Text(l.fundRefundConfirm)),
+                    child:Text(l.fundTopUpRequest,
+                      textAlign:TextAlign.center))),
                 ]),
+                if(net>0) ...[
+                  const SizedBox(height:8),
+                  SizedBox(width:double.infinity,
+                    child:TextButton.icon(
+                      onPressed:()=>refund(id),
+                      icon:const Icon(Icons.undo_outlined,size:18),
+                      label:Text(l.fundRefundConfirm))),
+                ],
               ],
             ]),
           ));

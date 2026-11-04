@@ -446,6 +446,8 @@ class _SettlementPageState extends State<SettlementPage> {
             ],
             const SizedBox(height: 22),
             Card(child:ExpansionTile(
+              shape:const RoundedRectangleBorder(side:BorderSide.none),
+              collapsedShape:const RoundedRectangleBorder(side:BorderSide.none),
               leading:const Icon(Icons.receipt_long_outlined),
               title:Text(l.settlementMoreDetails),
               childrenPadding:const EdgeInsets.fromLTRB(14,0,14,16),

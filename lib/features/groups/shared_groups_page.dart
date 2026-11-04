@@ -227,27 +227,6 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
     if (mounted) setState(() => legacyGroups = remaining);
   }
 
-  Widget _roundGroupAction({
-    required IconData icon,required String label,
-    required Color color,required VoidCallback? onTap,
-  }) => InkWell(
-    onTap:onTap,borderRadius:BorderRadius.circular(24),
-    child:Padding(padding:const EdgeInsets.symmetric(vertical:12),
-      child:Column(children:[
-        Container(width:82,height:82,
-          decoration:BoxDecoration(
-            shape:BoxShape.circle,color:color,
-            boxShadow:[BoxShadow(
-              color:color.withValues(alpha:0.30),
-              blurRadius:16,offset:const Offset(0,6))]),
-          child:Icon(icon,size:36,color:const Color(0xFF463757))),
-        const SizedBox(height:10),
-        Text(label,textAlign:TextAlign.center,
-          style:const TextStyle(fontWeight:FontWeight.w700)),
-      ]),
-    ),
-  );
-
   @override Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
@@ -263,16 +242,16 @@ class _SharedGroupsPageState extends State<SharedGroupsPage> {
         Text(l.cloudSubtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 24),
-        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
-          Expanded(child:_roundGroupAction(
-            icon:Icons.add_rounded,label:l.newGroup,
-            color:const Color(0xFFF4C7DD),
-            onTap:busy?null:create)),
-          const SizedBox(width:18),
-          Expanded(child:_roundGroupAction(
-            icon:Icons.group_add_outlined,label:l.cloudJoin,
-            color:const Color(0xFFDACFFF),
-            onTap:busy?null:join)),
+        Row(children:[
+          Expanded(child:FilledButton.icon(
+            onPressed:busy?null:create,
+            icon:const Icon(Icons.add_rounded,size:20),
+            label:Text(l.newGroup,textAlign:TextAlign.center))),
+          const SizedBox(width:10),
+          Expanded(child:OutlinedButton.icon(
+            onPressed:busy?null:join,
+            icon:const Icon(Icons.group_add_outlined,size:20),
+            label:Text(l.cloudJoin,textAlign:TextAlign.center))),
         ]),
         const SizedBox(height: 26),
         if (busy) const Center(child: CircularProgressIndicator()),

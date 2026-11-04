@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// SplitLui's visual language: quiet surfaces, crisp type and a restrained
-/// retain the light design; use lavender on neutral charcoal in dark mode.
+/// consistent teal accents in light and dark, with neutral charcoal dark surfaces.
 abstract final class LuiStyle {
   static const ink = Color(0xFF172A41);
   static const blue = Color(0xFF138C7C); // Existing light-mode accent.
@@ -12,20 +12,20 @@ abstract final class LuiStyle {
   static ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: dark ? const Color(0xFF9A87CA) : blue,
+      seedColor: blue,
       brightness: brightness,
-      primary: dark ? const Color(0xFFC8B6FF) : teal,
-      surface: dark ? const Color(0xFF262430) : Colors.white,
+      primary: dark ? const Color(0xFF74DCCB) : teal,
+      surface: dark ? const Color(0xFF252B30) : Colors.white,
     ).copyWith(
-      surfaceContainer: dark ? const Color(0xFF2D2A37) : null,
-      surfaceContainerHighest: dark ? const Color(0xFF383442) : null,
+      surfaceContainer: dark ? const Color(0xFF2C3339) : null,
+      surfaceContainerHighest: dark ? const Color(0xFF363F46) : null,
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF191820) : canvas,
+      scaffoldBackgroundColor: dark ? const Color(0xFF1B2025) : canvas,
       appBarTheme: AppBarTheme(
-        backgroundColor: dark ? const Color(0xFF191820) : canvas,
+        backgroundColor: dark ? const Color(0xFF1B2025) : canvas,
         foregroundColor: colorScheme.onSurface,
         centerTitle: false,
         elevation: 0,
@@ -43,7 +43,7 @@ abstract final class LuiStyle {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: dark ? const Color(0xFF45404F) : line),
+          side: BorderSide(color: dark ? const Color(0xFF424B52) : line),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -51,9 +51,9 @@ abstract final class LuiStyle {
         fillColor: colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: dark ? const Color(0xFF45404F) : line)),
+          borderSide: BorderSide(color: dark ? const Color(0xFF424B52) : line)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: dark ? const Color(0xFF45404F) : line)),
+          borderSide: BorderSide(color: dark ? const Color(0xFF424B52) : line)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: colorScheme.primary, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
@@ -66,8 +66,8 @@ abstract final class LuiStyle {
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        side: BorderSide(color: dark ? const Color(0xFF45404F) : line))),
-      dividerTheme: DividerThemeData(color: dark ? const Color(0xFF45404F) : line),
+        side: BorderSide(color: dark ? const Color(0xFF424B52) : line))),
+      dividerTheme: DividerThemeData(color: dark ? const Color(0xFF424B52) : line),
     );
   }
 }
