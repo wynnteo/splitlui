@@ -1,9 +1,12 @@
 /// Heuristic receipt hints. These are never trusted without user confirmation.
 /// Keep this pure Dart so basic parsing can be unit-tested without plugins.
 class ReceiptHints {
-  const ReceiptHints({this.merchant,this.currency,this.date,this.total});
+  const ReceiptHints({this.merchant,this.currency,this.date,this.total,
+    this.dateNeedsReview=false});
   final String? merchant,currency,total;
   final DateTime? date;
+  /// 02/04/2025 could be 2 April or February 4 depending on locale.
+  final bool dateNeedsReview;
 
   static ReceiptHints parse(String text) {
     final lines=text.split(RegExp(r'[\r\n]+'))
@@ -50,9 +53,16 @@ class ReceiptHints {
     DateTime? date;
     final iso=RegExp(r'\b(20\d{2})[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])\b').firstMatch(text);
     final common=RegExp(r'\b(0?[1-9]|[12]\d|3[01])[-/](0?[1-9]|1[0-2])[-/](20\d{2})\b').firstMatch(text);
+    var dateNeedsReview=false;
     if(iso!=null) date=_date(int.parse(iso.group(1)!),int.parse(iso.group(2)!),int.parse(iso.group(3)!));
-    else if(common!=null) date=_date(int.parse(common.group(3)!),int.parse(common.group(2)!),int.parse(common.group(1)!));
-    return ReceiptHints(merchant:merchant,currency:currency,date:date);
+    else if(common!=null) {
+      final day=int.parse(common.group(1)!);
+      final month=int.parse(common.group(2)!);
+      date=_date(int.parse(common.group(3)!),month,day);
+      dateNeedsReview=date!=null && day<=12;
+    }
+    return ReceiptHints(merchant:merchant,currency:currency,date:date,
+      dateNeedsReview:dateNeedsReview);
   }
 
   static DateTime? _date(int y,int m,int d) {
