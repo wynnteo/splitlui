@@ -607,6 +607,7 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
           'p_rate_to_spending': double.parse(rate.text.trim()),
           'p_note': note.text.trim(),
           'p_settle_full': settleFull,
+          'p_suggested_spending': widget.maxCents / 100,
         },
       );
       if (mounted) Navigator.pop(context, true);
