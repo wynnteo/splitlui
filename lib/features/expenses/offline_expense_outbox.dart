@@ -37,7 +37,7 @@ class OfflineExpenseOutbox {
     try {
     final root = await getApplicationDocumentsDirectory();
     final db = await openDatabase(p.join(root.path, 'splitlui_outbox.db'),
-      version: 1,
+      version: 2,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE offline_expenses(
@@ -50,6 +50,7 @@ class OfflineExpenseOutbox {
             rate_to_spending TEXT NOT NULL,
             paid_by TEXT NOT NULL,
             participants_json TEXT NOT NULL,
+            share_amounts_json TEXT,
             receipt_path TEXT,
             receipt_date TEXT,
             remote_expense_id TEXT,
@@ -87,6 +88,10 @@ class OfflineExpenseOutbox {
             PRIMARY KEY(user_id, group_id)
           )
         ''');
+      },
+      onUpgrade:(db,from,to) async {
+        if(from<2) await db.execute(
+          'ALTER TABLE offline_expenses ADD COLUMN share_amounts_json TEXT');
       });
     _database = db;
     return db;
@@ -107,6 +112,7 @@ class OfflineExpenseOutbox {
     required String rateToSpending,
     required String paidBy,
     required List<String> participants,
+    List<int>? shareCents,
     Uint8List? receipt,
     DateTime? receiptDate,
   }) async {
@@ -132,6 +138,8 @@ class OfflineExpenseOutbox {
         'rate_to_spending': rateToSpending,
         'paid_by': paidBy,
         'participants_json': jsonEncode(participants),
+        'share_amounts_json': shareCents == null ? null :
+          jsonEncode(shareCents.map((c)=>c/100).toList()),
         'receipt_path': path,
         'receipt_date': receiptDate == null ? null :
           receiptDate.toIso8601String().substring(0,10),
@@ -250,8 +258,11 @@ class OfflineExpenseOutbox {
           if (remoteId == null) {
             // A lost response is safe to retry: server accepts exactly one
             // immutable request per operation_id, including after deletion.
+            final customShares=row['share_amounts_json'] as String?;
             remoteId = (await Supabase.instance.client.rpc(
-              'add_trip_expense_offline',params:{
+              customShares == null ? 'add_trip_expense_offline' :
+                'add_trip_expense_offline_custom',
+              params:{
                 'p_operation':id,
                 'p_group':groupId,
                 'p_title':row['title'],
@@ -260,8 +271,15 @@ class OfflineExpenseOutbox {
                 'p_rate_to_spending':
                   num.parse(row['rate_to_spending'] as String),
                 'p_paid_by':row['paid_by'],
-                'p_split_between':List<String>.from(
-                  jsonDecode(row['participants_json'] as String) as List),
+                if(customShares==null)
+                  'p_split_between':List<String>.from(
+                    jsonDecode(row['participants_json'] as String) as List)
+                else ...{
+                  'p_members':List<String>.from(
+                    jsonDecode(row['participants_json'] as String) as List),
+                  'p_amounts':List<num>.from(
+                    jsonDecode(customShares) as List),
+                },
                 'p_date':row['receipt_date'],
               })).toString();
             // Persist remote ID BEFORE attempting any receipt upload. If the
