@@ -791,7 +791,7 @@ abstract class AppLocalizations {
   /// No description provided for @repaymentLimitations.
   ///
   /// In en, this message translates to:
-  /// **'Only the recipient can confirm money received. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Mistaken confirmations cannot yet be reversed; check carefully.'**
+  /// **'Only the recipient can confirm or reverse a repayment. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Reversals restore debt and remain visible in the audit history.'**
   String get repaymentLimitations;
 
   /// No description provided for @payNowDetails.
@@ -895,6 +895,642 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PayNow transfers in SGD. Agree the SGD amount with the recipient before paying.'**
   String get payNowAgreeSgd;
+
+  /// No description provided for @inviteShareHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re invited to join my SplitLui group!'**
+  String get inviteShareHeading;
+
+  /// No description provided for @inviteShareInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Install/open SplitLui, tap Join Group, then paste this code (or the full message).'**
+  String get inviteShareInstructions;
+
+  /// No description provided for @inviteInstallApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Install SplitLui'**
+  String get inviteInstallApp;
+
+  /// No description provided for @inviteShareButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Share invite'**
+  String get inviteShareButton;
+
+  /// No description provided for @inviteShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code privately with people you trust. Anyone with it can join until the organiser resets it.'**
+  String get inviteShareHint;
+
+  /// No description provided for @inviteInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a valid invitation code or the full invitation message.'**
+  String get inviteInvalidCode;
+
+  /// No description provided for @expenseFundAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Common Fund available'**
+  String get expenseFundAvailable;
+
+  /// No description provided for @expenseFundInsufficient.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough Common Fund balance. Please top up the fund or change the payer.'**
+  String get expenseFundInsufficient;
+
+  /// No description provided for @expenseFundNoSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid from Common Fund. No individual shares or personal repayment will be created.'**
+  String get expenseFundNoSplit;
+
+  /// No description provided for @settlementDisplayCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Show repayments in'**
+  String get settlementDisplayCurrency;
+
+  /// No description provided for @settlementOriginalBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Original balance'**
+  String get settlementOriginalBalance;
+
+  /// No description provided for @settlementEstimateDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted amounts are estimates using the group\'s agreed exchange rate; confirm the amount and currency before paying.'**
+  String get settlementEstimateDisclaimer;
+
+  /// No description provided for @settlementLedgerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Repayment records are still tracked in the group\'s spending currency'**
+  String get settlementLedgerNote;
+
+  /// No description provided for @settlementConvertedEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted estimate'**
+  String get settlementConvertedEstimate;
+
+  /// No description provided for @payNowReceivesFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'To receive'**
+  String get payNowReceivesFrom;
+
+  /// No description provided for @payNowFromMember.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get payNowFromMember;
+
+  /// No description provided for @expenseOriginalTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid in this currency'**
+  String get expenseOriginalTotal;
+
+  /// No description provided for @expenseCombinedTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Combined total'**
+  String get expenseCombinedTotal;
+
+  /// No description provided for @expenseCombinedRateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Original payments stay in their own currency. The combined estimate converts the trip spending currency using the registered group exchange rate. Shared member-paid expenses only; Common Fund purchases are excluded.'**
+  String get expenseCombinedRateNote;
+
+  /// No description provided for @expenseCombinedRateMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Original payments stay in their own currency. The trip spending currency uses the registered group rate; any other currencies use the saved expense conversions. Shared member-paid expenses only; Common Fund purchases are excluded.'**
+  String get expenseCombinedRateMixed;
+
+  /// No description provided for @repaymentDefaultCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Default repayment currency'**
+  String get repaymentDefaultCurrency;
+
+  /// No description provided for @repaymentDefaultCurrencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your preferred repayment currency. You can change it for each repayment; exchange rates outside the group\'s currency pair are entered manually.'**
+  String get repaymentDefaultCurrencyHint;
+
+  /// No description provided for @repaymentPaidCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency received'**
+  String get repaymentPaidCurrency;
+
+  /// No description provided for @repaymentPaidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount actually received'**
+  String get repaymentPaidAmount;
+
+  /// No description provided for @repaymentConversionRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate to group spending currency'**
+  String get repaymentConversionRate;
+
+  /// No description provided for @repaymentRateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the currency and amount actually received. For a different currency, enter the agreed rate; no live exchange rate is assumed.'**
+  String get repaymentRateHint;
+
+  /// No description provided for @repaymentLedgerEquivalent.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount credited against debt'**
+  String get repaymentLedgerEquivalent;
+
+  /// No description provided for @repaymentOutstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding balance'**
+  String get repaymentOutstanding;
+
+  /// No description provided for @repaymentExceedsOutstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'The converted repayment exceeds the outstanding balance. Record a smaller amount.'**
+  String get repaymentExceedsOutstanding;
+
+  /// No description provided for @repaymentUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo confirmation'**
+  String get repaymentUndo;
+
+  /// No description provided for @repaymentUndoWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Only undo if the payment was recorded incorrectly. This restores the debt and keeps a permanent reversal record; it does not reverse any bank transfer.'**
+  String get repaymentUndoWarning;
+
+  /// No description provided for @repaymentReversalReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for reversal'**
+  String get repaymentReversalReason;
+
+  /// No description provided for @repaymentReversalReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Wrong amount recorded'**
+  String get repaymentReversalReasonHint;
+
+  /// No description provided for @repaymentReversalReasonInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reason (at least 3 characters).'**
+  String get repaymentReversalReasonInvalid;
+
+  /// No description provided for @repaymentUndoConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm reversal'**
+  String get repaymentUndoConfirm;
+
+  /// No description provided for @repaymentReversed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reversed — debt restored'**
+  String get repaymentReversed;
+
+  /// No description provided for @receiptAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt (optional)'**
+  String get receiptAttachment;
+
+  /// No description provided for @receiptCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get receiptCamera;
+
+  /// No description provided for @receiptGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get receiptGallery;
+
+  /// No description provided for @receiptRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get receiptRemove;
+
+  /// No description provided for @receiptReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Text recognition is only a suggestion. Check the amount and currency before saving.'**
+  String get receiptReviewHint;
+
+  /// No description provided for @receiptUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again.'**
+  String get receiptUploadFailed;
+
+  /// No description provided for @editExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit expense'**
+  String get editExpense;
+
+  /// No description provided for @deleteExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete expense'**
+  String get deleteExpense;
+
+  /// No description provided for @deleteExpenseWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this expense and its member shares? Outstanding balances will be recalculated. Expenses cannot be changed after confirmed repayments.'**
+  String get deleteExpenseWarning;
+
+  /// No description provided for @expenseReceiptCleanupWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense deleted, but its stored receipt photo could not be removed. Please contact support for cleanup.'**
+  String get expenseReceiptCleanupWarning;
+
+  /// No description provided for @expenseReceiptDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt date'**
+  String get expenseReceiptDate;
+
+  /// No description provided for @expenseChooseDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose receipt date'**
+  String get expenseChooseDate;
+
+  /// No description provided for @offlinePendingHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved offline · Waiting to sync'**
+  String get offlinePendingHeading;
+
+  /// No description provided for @offlineRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get offlineRetry;
+
+  /// No description provided for @offlinePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device · Not yet synced'**
+  String get offlinePending;
+
+  /// No description provided for @offlineNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync needs attention · Retry when connected'**
+  String get offlineNeedsReview;
+
+  /// No description provided for @offlineReceiptPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense synced · Receipt upload pending'**
+  String get offlineReceiptPending;
+
+  /// No description provided for @offlineReadOnlySnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing saved expenses from this device. Balances may be outdated until connected.'**
+  String get offlineReadOnlySnapshot;
+
+  /// No description provided for @offlineReadOnlyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline snapshot. Member splits, receipt downloads and editing require an internet connection. Amounts may have changed on another device.'**
+  String get offlineReadOnlyDetails;
+
+  /// No description provided for @offlinePendingDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'This expense has been stored on this device. It is not included in shared balances until the server confirms it. Do not enter it again while waiting for sync.'**
+  String get offlinePendingDetails;
+
+  /// No description provided for @fundPurchaseDeleteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this Common Fund purchase? Its full amount will be restored to the fund balance. This correction will be kept in the audit history.'**
+  String get fundPurchaseDeleteWarning;
+
+  /// No description provided for @fundPurchaseAuthorOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the member who recorded this Common Fund purchase can edit or delete it while online.'**
+  String get fundPurchaseAuthorOnly;
+
+  /// No description provided for @fundContributionTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'Contribution targets'**
+  String get fundContributionTargets;
+
+  /// No description provided for @fundTargetTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get fundTargetTotal;
+
+  /// No description provided for @fundTotalReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get fundTotalReceived;
+
+  /// No description provided for @fundOutstandingToCollect.
+  ///
+  /// In en, this message translates to:
+  /// **'Still to collect'**
+  String get fundOutstandingToCollect;
+
+  /// No description provided for @fundTargetsNotBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Targets and top-up requests are plans only. They do not increase the available Common Fund balance.'**
+  String get fundTargetsNotBalance;
+
+  /// No description provided for @fundTargetSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set target'**
+  String get fundTargetSet;
+
+  /// No description provided for @fundTopUpRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request top-up'**
+  String get fundTopUpRequest;
+
+  /// No description provided for @fundRefundConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm refund received'**
+  String get fundRefundConfirm;
+
+  /// No description provided for @fundRefundNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund reason and payment method'**
+  String get fundRefundNote;
+
+  /// No description provided for @fundRefundWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Only confirm after the recipient has actually received the refund. This permanently reduces the Common Fund balance and records an audit entry.'**
+  String get fundRefundWarning;
+
+  /// No description provided for @fundRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded to members'**
+  String get fundRefunded;
+
+  /// No description provided for @fundTopUpRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-up requests'**
+  String get fundTopUpRequests;
+
+  /// No description provided for @fundNoRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests yet.'**
+  String get fundNoRequests;
+
+  /// No description provided for @fundTopUpPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested · not a confirmed contribution'**
+  String get fundTopUpPending;
+
+  /// No description provided for @fundTopUpCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get fundTopUpCancelled;
+
+  /// No description provided for @fundCancelRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get fundCancelRequest;
+
+  /// No description provided for @fundClosingPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Fund closing preview'**
+  String get fundClosingPreview;
+
+  /// No description provided for @fundTotalSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Fund purchases'**
+  String get fundTotalSpent;
+
+  /// No description provided for @fundClosingNotFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconciliation preview only. This does not close the fund or pay anyone. Resolve outstanding contributions and confirm agreed refunds before closing the trip.'**
+  String get fundClosingNotFinal;
+
+  /// No description provided for @fundReconciliationMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: fund balance does not reconcile with received contributions, purchases and confirmed refunds.'**
+  String get fundReconciliationMismatch;
+
+  /// No description provided for @fundAdvancedLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load fund targets and refunds. Check your connection and Supabase migration.'**
+  String get fundAdvancedLoadError;
+
+  /// No description provided for @fundRefundHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed refunds'**
+  String get fundRefundHistory;
+
+  /// No description provided for @fundNoRefunds.
+  ///
+  /// In en, this message translates to:
+  /// **'No refunds confirmed yet.'**
+  String get fundNoRefunds;
+
+  /// No description provided for @repaymentActualReceivedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the amount you actually received. A rounded or partial payment is fine.'**
+  String get repaymentActualReceivedHint;
+
+  /// No description provided for @settlementMoreDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'More details'**
+  String get settlementMoreDetails;
+
+  /// No description provided for @repaymentSettleFull.
+  ///
+  /// In en, this message translates to:
+  /// **'This payment settles the full amount'**
+  String get repaymentSettleFull;
+
+  /// No description provided for @tripReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip closing report'**
+  String get tripReportTitle;
+
+  /// No description provided for @tripReportEntryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a summary of expenses, Common Fund and repayments'**
+  String get tripReportEntryHint;
+
+  /// No description provided for @tripReportIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a PDF snapshot of your trip records. Nothing is closed or paid automatically.'**
+  String get tripReportIntro;
+
+  /// No description provided for @tripReportIncludes.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s included'**
+  String get tripReportIncludes;
+
+  /// No description provided for @tripReportContents.
+  ///
+  /// In en, this message translates to:
+  /// **'Original-currency spending, combined estimates, remaining repayments, Common Fund contributions, refunds, outstanding targets and reconciliation checks.'**
+  String get tripReportContents;
+
+  /// No description provided for @tripReportIncludeReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Include receipt photos'**
+  String get tripReportIncludeReceipts;
+
+  /// No description provided for @tripReportReceiptNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional · Up to 8 receipts. Anyone you send the PDF to can keep the images.'**
+  String get tripReportReceiptNotice;
+
+  /// No description provided for @tripReportWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.'**
+  String get tripReportWarning;
+
+  /// No description provided for @tripReportGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing PDF…'**
+  String get tripReportGenerating;
+
+  /// No description provided for @tripReportSharePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and share PDF'**
+  String get tripReportSharePdf;
+
+  /// No description provided for @offlineSkipReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip photo'**
+  String get offlineSkipReceipt;
+
+  /// No description provided for @offlineSkipReceiptWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This expense is already saved for the group. Stop trying to upload its photo? This will delete the local photo copy, but will NOT remove or change the expense.'**
+  String get offlineSkipReceiptWarning;
+
+  /// No description provided for @offlineExpenseAlreadySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'The expense is confirmed. Only its receipt photo is waiting to upload.'**
+  String get offlineExpenseAlreadySaved;
+
+  /// No description provided for @offlineSyncProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync details'**
+  String get offlineSyncProblem;
+
+  /// No description provided for @offlineReceiptsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt photos waiting to upload'**
+  String get offlineReceiptsHeading;
+
+  /// No description provided for @splitModeEqual.
+  ///
+  /// In en, this message translates to:
+  /// **'Equal'**
+  String get splitModeEqual;
+
+  /// No description provided for @splitModeAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get splitModeAmount;
+
+  /// No description provided for @splitModePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Percent'**
+  String get splitModePercent;
+
+  /// No description provided for @splitModeShares.
+  ///
+  /// In en, this message translates to:
+  /// **'Shares'**
+  String get splitModeShares;
+
+  /// No description provided for @splitEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter each person\'s amount, percentage or number of shares. The total must match the bill.'**
+  String get splitEditHint;
+
+  /// No description provided for @splitAllocationValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Split total matches the bill'**
+  String get splitAllocationValid;
+
+  /// No description provided for @splitAllocationInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%.'**
+  String get splitAllocationInvalid;
 }
 
 class _AppLocalizationsDelegate

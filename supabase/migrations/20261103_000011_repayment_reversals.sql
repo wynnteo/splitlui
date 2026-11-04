@@ -5,7 +5,7 @@
 
 alter table public.trip_repayments
   add column if not exists reversed_at timestamptz,
-  add column if not exists reversed_by uuid references auth.users(id),
+  add column if not exists reversed_bgit y uuid references auth.users(id),
   add column if not exists reversal_reason text;
 
 create index if not exists trip_repayments_active_group_idx

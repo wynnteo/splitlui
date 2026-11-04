@@ -375,7 +375,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repaymentLimitations =>
-      'Only the recipient can confirm money received. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Mistaken confirmations cannot yet be reversed; check carefully.';
+      'Only the recipient can confirm or reverse a repayment. Recorded repayments reduce outstanding personal debts, not Common Fund balances. No payment is transferred or verified by a bank. Reversals restore debt and remain visible in the audit history.';
 
   @override
   String get payNowDetails => 'My PayNow details';
@@ -435,4 +435,362 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get payNowAgreeSgd =>
       'PayNow transfers in SGD. Agree the SGD amount with the recipient before paying.';
+
+  @override
+  String get inviteShareHeading => 'You\'re invited to join my SplitLui group!';
+
+  @override
+  String get inviteShareInstructions =>
+      'Install/open SplitLui, tap Join Group, then paste this code (or the full message).';
+
+  @override
+  String get inviteInstallApp => 'Install SplitLui';
+
+  @override
+  String get inviteShareButton => 'Share invite';
+
+  @override
+  String get inviteShareHint =>
+      'Share this code privately with people you trust. Anyone with it can join until the organiser resets it.';
+
+  @override
+  String get inviteInvalidCode =>
+      'Paste a valid invitation code or the full invitation message.';
+
+  @override
+  String get expenseFundAvailable => 'Common Fund available';
+
+  @override
+  String get expenseFundInsufficient =>
+      'Not enough Common Fund balance. Please top up the fund or change the payer.';
+
+  @override
+  String get expenseFundNoSplit =>
+      'Paid from Common Fund. No individual shares or personal repayment will be created.';
+
+  @override
+  String get settlementDisplayCurrency => 'Show repayments in';
+
+  @override
+  String get settlementOriginalBalance => 'Original balance';
+
+  @override
+  String get settlementEstimateDisclaimer =>
+      'Converted amounts are estimates using the group\'s agreed exchange rate; confirm the amount and currency before paying.';
+
+  @override
+  String get settlementLedgerNote =>
+      'Repayment records are still tracked in the group\'s spending currency';
+
+  @override
+  String get settlementConvertedEstimate => 'Converted estimate';
+
+  @override
+  String get payNowReceivesFrom => 'To receive';
+
+  @override
+  String get payNowFromMember => 'From';
+
+  @override
+  String get expenseOriginalTotal => 'Paid in this currency';
+
+  @override
+  String get expenseCombinedTotal => 'Combined total';
+
+  @override
+  String get expenseCombinedRateNote =>
+      'Original payments stay in their own currency. The combined estimate converts the trip spending currency using the registered group exchange rate. Shared member-paid expenses only; Common Fund purchases are excluded.';
+
+  @override
+  String get expenseCombinedRateMixed =>
+      'Original payments stay in their own currency. The trip spending currency uses the registered group rate; any other currencies use the saved expense conversions. Shared member-paid expenses only; Common Fund purchases are excluded.';
+
+  @override
+  String get repaymentDefaultCurrency => 'Default repayment currency';
+
+  @override
+  String get repaymentDefaultCurrencyHint =>
+      'Choose your preferred repayment currency. You can change it for each repayment; exchange rates outside the group\'s currency pair are entered manually.';
+
+  @override
+  String get repaymentPaidCurrency => 'Currency received';
+
+  @override
+  String get repaymentPaidAmount => 'Amount actually received';
+
+  @override
+  String get repaymentConversionRate =>
+      'Exchange rate to group spending currency';
+
+  @override
+  String get repaymentRateHint =>
+      'Record the currency and amount actually received. For a different currency, enter the agreed rate; no live exchange rate is assumed.';
+
+  @override
+  String get repaymentLedgerEquivalent => 'Amount credited against debt';
+
+  @override
+  String get repaymentOutstanding => 'Outstanding balance';
+
+  @override
+  String get repaymentExceedsOutstanding =>
+      'The converted repayment exceeds the outstanding balance. Record a smaller amount.';
+
+  @override
+  String get repaymentUndo => 'Undo confirmation';
+
+  @override
+  String get repaymentUndoWarning =>
+      'Only undo if the payment was recorded incorrectly. This restores the debt and keeps a permanent reversal record; it does not reverse any bank transfer.';
+
+  @override
+  String get repaymentReversalReason => 'Reason for reversal';
+
+  @override
+  String get repaymentReversalReasonHint => 'e.g. Wrong amount recorded';
+
+  @override
+  String get repaymentReversalReasonInvalid =>
+      'Enter a reason (at least 3 characters).';
+
+  @override
+  String get repaymentUndoConfirm => 'Confirm reversal';
+
+  @override
+  String get repaymentReversed => 'Reversed — debt restored';
+
+  @override
+  String get receiptAttachment => 'Receipt (optional)';
+
+  @override
+  String get receiptCamera => 'Take photo';
+
+  @override
+  String get receiptGallery => 'Choose photo';
+
+  @override
+  String get receiptRemove => 'Remove photo';
+
+  @override
+  String get receiptReviewHint =>
+      'Text recognition is only a suggestion. Check the amount and currency before saving.';
+
+  @override
+  String get receiptUploadFailed =>
+      'Expense was saved, but the receipt photo could not be uploaded. Please do not save this expense again.';
+
+  @override
+  String get editExpense => 'Edit expense';
+
+  @override
+  String get deleteExpense => 'Delete expense';
+
+  @override
+  String get deleteExpenseWarning =>
+      'Delete this expense and its member shares? Outstanding balances will be recalculated. Expenses cannot be changed after confirmed repayments.';
+
+  @override
+  String get expenseReceiptCleanupWarning =>
+      'Expense deleted, but its stored receipt photo could not be removed. Please contact support for cleanup.';
+
+  @override
+  String get expenseReceiptDate => 'Receipt date';
+
+  @override
+  String get expenseChooseDate => 'Choose receipt date';
+
+  @override
+  String get offlinePendingHeading => 'Saved offline · Waiting to sync';
+
+  @override
+  String get offlineRetry => 'Sync now';
+
+  @override
+  String get offlinePending => 'Saved on this device · Not yet synced';
+
+  @override
+  String get offlineNeedsReview =>
+      'Sync needs attention · Retry when connected';
+
+  @override
+  String get offlineReceiptPending => 'Expense synced · Receipt upload pending';
+
+  @override
+  String get offlineReadOnlySnapshot =>
+      'Showing saved expenses from this device. Balances may be outdated until connected.';
+
+  @override
+  String get offlineReadOnlyDetails =>
+      'Offline snapshot. Member splits, receipt downloads and editing require an internet connection. Amounts may have changed on another device.';
+
+  @override
+  String get offlinePendingDetails =>
+      'This expense has been stored on this device. It is not included in shared balances until the server confirms it. Do not enter it again while waiting for sync.';
+
+  @override
+  String get fundPurchaseDeleteWarning =>
+      'Delete this Common Fund purchase? Its full amount will be restored to the fund balance. This correction will be kept in the audit history.';
+
+  @override
+  String get fundPurchaseAuthorOnly =>
+      'Only the member who recorded this Common Fund purchase can edit or delete it while online.';
+
+  @override
+  String get fundContributionTargets => 'Contribution targets';
+
+  @override
+  String get fundTargetTotal => 'Target';
+
+  @override
+  String get fundTotalReceived => 'Received';
+
+  @override
+  String get fundOutstandingToCollect => 'Still to collect';
+
+  @override
+  String get fundTargetsNotBalance =>
+      'Targets and top-up requests are plans only. They do not increase the available Common Fund balance.';
+
+  @override
+  String get fundTargetSet => 'Set target';
+
+  @override
+  String get fundTopUpRequest => 'Request top-up';
+
+  @override
+  String get fundRefundConfirm => 'Confirm refund received';
+
+  @override
+  String get fundRefundNote => 'Refund reason and payment method';
+
+  @override
+  String get fundRefundWarning =>
+      'Only confirm after the recipient has actually received the refund. This permanently reduces the Common Fund balance and records an audit entry.';
+
+  @override
+  String get fundRefunded => 'Refunded to members';
+
+  @override
+  String get fundTopUpRequests => 'Top-up requests';
+
+  @override
+  String get fundNoRequests => 'No requests yet.';
+
+  @override
+  String get fundTopUpPending => 'Requested · not a confirmed contribution';
+
+  @override
+  String get fundTopUpCancelled => 'Cancelled';
+
+  @override
+  String get fundCancelRequest => 'Cancel request';
+
+  @override
+  String get fundClosingPreview => 'Fund closing preview';
+
+  @override
+  String get fundTotalSpent => 'Fund purchases';
+
+  @override
+  String get fundClosingNotFinal =>
+      'Reconciliation preview only. This does not close the fund or pay anyone. Resolve outstanding contributions and confirm agreed refunds before closing the trip.';
+
+  @override
+  String get fundReconciliationMismatch =>
+      'Warning: fund balance does not reconcile with received contributions, purchases and confirmed refunds.';
+
+  @override
+  String get fundAdvancedLoadError =>
+      'Could not load fund targets and refunds. Check your connection and Supabase migration.';
+
+  @override
+  String get fundRefundHistory => 'Confirmed refunds';
+
+  @override
+  String get fundNoRefunds => 'No refunds confirmed yet.';
+
+  @override
+  String get repaymentActualReceivedHint =>
+      'Enter the amount you actually received. A rounded or partial payment is fine.';
+
+  @override
+  String get settlementMoreDetails => 'More details';
+
+  @override
+  String get repaymentSettleFull => 'This payment settles the full amount';
+
+  @override
+  String get tripReportTitle => 'Trip closing report';
+
+  @override
+  String get tripReportEntryHint =>
+      'Share a summary of expenses, Common Fund and repayments';
+
+  @override
+  String get tripReportIntro =>
+      'Create a PDF snapshot of your trip records. Nothing is closed or paid automatically.';
+
+  @override
+  String get tripReportIncludes => 'What\'s included';
+
+  @override
+  String get tripReportContents =>
+      'Original-currency spending, combined estimates, remaining repayments, Common Fund contributions, refunds, outstanding targets and reconciliation checks.';
+
+  @override
+  String get tripReportIncludeReceipts => 'Include receipt photos';
+
+  @override
+  String get tripReportReceiptNotice =>
+      'Optional · Up to 8 receipts. Anyone you send the PDF to can keep the images.';
+
+  @override
+  String get tripReportWarning =>
+      'Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.';
+
+  @override
+  String get tripReportGenerating => 'Preparing PDF…';
+
+  @override
+  String get tripReportSharePdf => 'Create and share PDF';
+
+  @override
+  String get offlineSkipReceipt => 'Skip photo';
+
+  @override
+  String get offlineSkipReceiptWarning =>
+      'This expense is already saved for the group. Stop trying to upload its photo? This will delete the local photo copy, but will NOT remove or change the expense.';
+
+  @override
+  String get offlineExpenseAlreadySaved =>
+      'The expense is confirmed. Only its receipt photo is waiting to upload.';
+
+  @override
+  String get offlineSyncProblem => 'Sync details';
+
+  @override
+  String get offlineReceiptsHeading => 'Receipt photos waiting to upload';
+
+  @override
+  String get splitModeEqual => 'Equal';
+
+  @override
+  String get splitModeAmount => 'Amount';
+
+  @override
+  String get splitModePercent => 'Percent';
+
+  @override
+  String get splitModeShares => 'Shares';
+
+  @override
+  String get splitEditHint =>
+      'Enter each person\'s amount, percentage or number of shares. The total must match the bill.';
+
+  @override
+  String get splitAllocationValid => 'Split total matches the bill';
+
+  @override
+  String get splitAllocationInvalid =>
+      'Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%.';
 }

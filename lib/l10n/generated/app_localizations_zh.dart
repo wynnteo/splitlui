@@ -359,7 +359,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get repaymentLimitations =>
-      '只有收款人才可以确认已收到款项。还款会减少个人应收应付，不会更改共同基金余额。本功能不会自动转账或向银行核实。错误确认目前不能撤销，请核对后再记录。';
+      '只有收款人可确认或撤销还款记录。已确认还款会减少个人欠款，不影响共同基金。系统不会自动转账或向银行核实。撤销会恢复欠款，并保留审计记录。';
 
   @override
   String get payNowDetails => '我的 PayNow 收款资料';
@@ -412,4 +412,330 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get payNowAgreeSgd => 'PayNow 以新币转账，付款前请与收款人确认实际 SGD 金额。';
+
+  @override
+  String get inviteShareHeading => '邀请你加入我的 SplitLui 群组！';
+
+  @override
+  String get inviteShareInstructions =>
+      '安装或打开 SplitLui，选择「加入群组」，然后贴上邀请码（或整段邀请消息）。';
+
+  @override
+  String get inviteInstallApp => '安装 SplitLui';
+
+  @override
+  String get inviteShareButton => '分享邀请';
+
+  @override
+  String get inviteShareHint => '请私下分享给你信任的人。任何拿到邀请码的人都可以加入，直到组织者重置邀请码。';
+
+  @override
+  String get inviteInvalidCode => '请贴上有效的邀请码或完整邀请消息。';
+
+  @override
+  String get expenseFundAvailable => '共同基金可用余额';
+
+  @override
+  String get expenseFundInsufficient => '共同基金余额不足，请先补款或更换付款人。';
+
+  @override
+  String get expenseFundNoSplit => '由共同基金付款，不会另外分摊给成员，也不会产生个人欠款。';
+
+  @override
+  String get settlementDisplayCurrency => '还款显示货币';
+
+  @override
+  String get settlementOriginalBalance => '原本欠款';
+
+  @override
+  String get settlementEstimateDisclaimer => '换算金额仅根据群组约定汇率估算。付款前请确认金额及货币。';
+
+  @override
+  String get settlementLedgerNote => '已确认的还款仍以群组消费货币记录';
+
+  @override
+  String get settlementConvertedEstimate => '换算参考金额';
+
+  @override
+  String get payNowReceivesFrom => '待收款';
+
+  @override
+  String get payNowFromMember => '付款人';
+
+  @override
+  String get expenseOriginalTotal => '以此货币支付';
+
+  @override
+  String get expenseCombinedTotal => '合计';
+
+  @override
+  String get expenseCombinedRateNote =>
+      '保留实际付款货币；合计仅使用群组设定汇率换算旅程消费货币。这里只统计成员垫付的分摊开销，不包含共同基金支出。';
+
+  @override
+  String get expenseCombinedRateMixed =>
+      '保留实际付款货币；旅程消费货币依群组汇率换算，其他货币依每笔开销已保存的汇率换算。这里只统计成员垫付的分摊开销，不包含共同基金支出。';
+
+  @override
+  String get repaymentDefaultCurrency => '默认还款货币';
+
+  @override
+  String get repaymentDefaultCurrencyHint =>
+      '选择默认还款货币。每笔还款仍可更改；若货币不属于群组设定的货币组合，请手动输入约定汇率。';
+
+  @override
+  String get repaymentPaidCurrency => '实际收到的货币';
+
+  @override
+  String get repaymentPaidAmount => '实际收到的金额';
+
+  @override
+  String get repaymentConversionRate => '兑换成群组消费货币的汇率';
+
+  @override
+  String get repaymentRateHint =>
+      '请记录实际收到的货币与金额。如使用其他货币，请输入双方约定的汇率；不会自动使用实时汇率。';
+
+  @override
+  String get repaymentLedgerEquivalent => '抵扣欠款的金额';
+
+  @override
+  String get repaymentOutstanding => '尚欠金额';
+
+  @override
+  String get repaymentExceedsOutstanding => '换算后的还款超过尚欠金额，请减少还款金额。';
+
+  @override
+  String get repaymentUndo => '撤销收款确认';
+
+  @override
+  String get repaymentUndoWarning => '仅在误记录收款时撤销。系统会恢复欠款并保留撤销记录；此操作不会撤回任何银行转账。';
+
+  @override
+  String get repaymentReversalReason => '撤销原因';
+
+  @override
+  String get repaymentReversalReasonHint => '例如：记录的金额有误';
+
+  @override
+  String get repaymentReversalReasonInvalid => '请填写至少 3 个字的原因。';
+
+  @override
+  String get repaymentUndoConfirm => '确认撤销';
+
+  @override
+  String get repaymentReversed => '已撤销 — 欠款已恢复';
+
+  @override
+  String get receiptAttachment => '收据照片（选填）';
+
+  @override
+  String get receiptCamera => '拍照';
+
+  @override
+  String get receiptGallery => '从相册选择';
+
+  @override
+  String get receiptRemove => '移除照片';
+
+  @override
+  String get receiptReviewHint => '识别金额仅供参考，保存前请确认金额和货币。';
+
+  @override
+  String get receiptUploadFailed => '开销已保存，但收据照片上传失败。请勿重复新增同一笔开销。';
+
+  @override
+  String get editExpense => '编辑开销';
+
+  @override
+  String get deleteExpense => '删除开销';
+
+  @override
+  String get deleteExpenseWarning => '确定删除此开销和成员分摊吗？欠款将重新计算。已有确认还款的群组不可修改开销。';
+
+  @override
+  String get expenseReceiptCleanupWarning => '开销已删除，但收据照片清理失败，请联系管理员处理。';
+
+  @override
+  String get expenseReceiptDate => '收据日期';
+
+  @override
+  String get expenseChooseDate => '选择收据日期';
+
+  @override
+  String get offlinePendingHeading => '离线保存 · 等待同步';
+
+  @override
+  String get offlineRetry => '立即同步';
+
+  @override
+  String get offlinePending => '已保存到本机 · 尚未同步';
+
+  @override
+  String get offlineNeedsReview => '同步需处理 · 联网后重试';
+
+  @override
+  String get offlineReceiptPending => '开销已同步 · 收据待上传';
+
+  @override
+  String get offlineReadOnlySnapshot => '正在显示本机缓存的开销。联网前余额可能不是最新的。';
+
+  @override
+  String get offlineReadOnlyDetails => '离线缓存资料。成员分摊、收据下载和编辑需要联网；其他设备可能已修改金额。';
+
+  @override
+  String get offlinePendingDetails => '这笔开销已保存在本机。服务器确认前不会计入群组余额。等待同步期间请勿重复新增。';
+
+  @override
+  String get fundPurchaseDeleteWarning =>
+      '确定删除这笔共同基金开销吗？已扣除的金额会退回共同基金余额，调整记录将保留供查阅。';
+
+  @override
+  String get fundPurchaseAuthorOnly => '只有最初记录这笔共同基金开销的成员才能在联网时编辑或删除。';
+
+  @override
+  String get fundContributionTargets => '共同基金分摊目标';
+
+  @override
+  String get fundTargetTotal => '目标金额';
+
+  @override
+  String get fundTotalReceived => '实际收到';
+
+  @override
+  String get fundOutstandingToCollect => '尚待收取';
+
+  @override
+  String get fundTargetsNotBalance => '目标和补款请求只是计划，不会增加共同基金实际余额。';
+
+  @override
+  String get fundTargetSet => '设置目标';
+
+  @override
+  String get fundTopUpRequest => '请求补款';
+
+  @override
+  String get fundRefundConfirm => '确认已退款';
+
+  @override
+  String get fundRefundNote => '退款原因及支付方式';
+
+  @override
+  String get fundRefundWarning => '请仅在成员确实收到退款后确认。操作会扣减共同基金余额，并留下审计记录。';
+
+  @override
+  String get fundRefunded => '已退还成员';
+
+  @override
+  String get fundTopUpRequests => '补款请求';
+
+  @override
+  String get fundNoRequests => '暂无补款请求。';
+
+  @override
+  String get fundTopUpPending => '已请求 · 尚非实际入账';
+
+  @override
+  String get fundTopUpCancelled => '已取消';
+
+  @override
+  String get fundCancelRequest => '取消请求';
+
+  @override
+  String get fundClosingPreview => '共同基金结算预览';
+
+  @override
+  String get fundTotalSpent => '共同基金支出';
+
+  @override
+  String get fundClosingNotFinal => '这里只是结算预览，不会真正关闭共同基金或转账。请先处理未收款项和已同意的退款。';
+
+  @override
+  String get fundReconciliationMismatch => '提醒：当前基金余额与已收贡献、支出和已确认退款不一致。';
+
+  @override
+  String get fundAdvancedLoadError => '无法载入基金目标和退款资料，请检查网络及 Supabase 数据库迁移。';
+
+  @override
+  String get fundRefundHistory => '已确认退款记录';
+
+  @override
+  String get fundNoRefunds => '暂无已确认的退款。';
+
+  @override
+  String get repaymentActualReceivedHint => '请输入实际收到的金额。可以是凑整金额或部分还款。';
+
+  @override
+  String get settlementMoreDetails => '查看更多详情';
+
+  @override
+  String get repaymentSettleFull => '这笔还款已全部结清';
+
+  @override
+  String get tripReportTitle => '旅程结算报告';
+
+  @override
+  String get tripReportEntryHint => '分享开销、共同基金及还款汇总';
+
+  @override
+  String get tripReportIntro => '生成旅程记录的 PDF 快照，不会自动关闭群组或进行转账。';
+
+  @override
+  String get tripReportIncludes => '报告内容';
+
+  @override
+  String get tripReportContents => '原币开销、换算估计、未结清还款、共同基金贡献与退款、待收款目标及对账检查。';
+
+  @override
+  String get tripReportIncludeReceipts => '附上收据照片';
+
+  @override
+  String get tripReportReceiptNotice => '选填 · 最多 8 张。任何收到 PDF 的人都可以保存这些照片。';
+
+  @override
+  String get tripReportWarning =>
+      '需要网络连接及最新同步记录。PDF 只是快照，并非付款确认或正式基金结算。目前导出的 PDF 使用英文标题及支持拉丁文字的字体。';
+
+  @override
+  String get tripReportGenerating => '正在生成 PDF…';
+
+  @override
+  String get tripReportSharePdf => '生成并分享 PDF';
+
+  @override
+  String get offlineSkipReceipt => '跳过收据照片';
+
+  @override
+  String get offlineSkipReceiptWarning =>
+      '这笔开销已记录到群组。确定停止上传照片吗？本机照片将被删除，但不会删除或修改开销。';
+
+  @override
+  String get offlineExpenseAlreadySaved => '开销已确认，只有收据照片尚未上传。';
+
+  @override
+  String get offlineSyncProblem => '同步详情';
+
+  @override
+  String get offlineReceiptsHeading => '收据照片等待上传';
+
+  @override
+  String get splitModeEqual => '平均分摊';
+
+  @override
+  String get splitModeAmount => '指定金额';
+
+  @override
+  String get splitModePercent => '百分比';
+
+  @override
+  String get splitModeShares => '份数';
+
+  @override
+  String get splitEditHint => '填写每个人的金额、百分比或份数。分摊总额必须与账单一致。';
+
+  @override
+  String get splitAllocationValid => '分摊金额与账单一致';
+
+  @override
+  String get splitAllocationInvalid => '请检查金额及分摊数值。指定金额须等于账单总额，百分比须合计 100%。';
 }
