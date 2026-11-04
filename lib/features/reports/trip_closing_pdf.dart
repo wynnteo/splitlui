@@ -67,8 +67,8 @@ class TripClosingPdf {
       pw.Text(clean(groupName),style:pw.TextStyle(
         fontSize:24,fontWeight:pw.FontWeight.bold,color:ink)),
       pw.SizedBox(height:5),
-      note('Generated: '+data.generatedAt.toLocal().toIso8601String()
-        .substring(0,16)+' | Read-only snapshot; no money moved'),
+      note(t('Generated: ','生成时间：')+data.generatedAt.toLocal().toIso8601String()
+        .substring(0,16)+t(' | Read-only snapshot; no money moved','｜只读快照，不会转账')),
       pw.SizedBox(height:10),
       pw.Container(
         padding:const pw.EdgeInsets.all(12),
@@ -81,33 +81,36 @@ class TripClosingPdf {
             style:pw.TextStyle(color:teal,
               fontWeight:pw.FontWeight.bold,fontSize:11)),
           note(snapshot.needsReview ?
-            'Review pending sync, outstanding transfers, collection targets and fund reconciliation.' :
-            'This does not confirm transfers or formally close the group.'),
+            t('Review pending sync, outstanding transfers, collection targets and fund reconciliation.',
+              '请检查待同步开销、未结清还款、贡献目标及基金对账。') :
+            t('This does not confirm transfers or formally close the group.',
+              '这不代表已确认转账，也不会正式关闭群组。')),
         ])),
       heading(t('Shared expenses by original currency','按原币种统计开销')),
       for(final row in snapshot.expenseSummary.totals)
-        line(row.currency+' ('+row.count.toString()+' expenses)',
+        line(row.currency+' ('+row.count.toString()+t(' expenses',' 笔开销')+')',
           money(row.currency,row.cents)),
       pw.Divider(color:PdfColors.grey300),
       line(t('Estimated combined spending','换算后开销总额'),
         money(snapshot.expenseSummary.totalSettlementCurrency,
           snapshot.expenseSummary.totalSettlementCents),strong:true),
-      note('Trip rate and saved expense rates are estimates. Common Fund '
-        'purchases are tracked separately and never double-counted.'),
+      note(t('Exchange-rate totals are estimates. Common Fund purchases are tracked separately.',
+        '汇率换算仅为估算；共同基金支出独立记录，不重复计算。')),
       heading(t('Who pays whom - remaining suggestions','待结清的还款建议')),
       if(snapshot.settlements.transfers.isEmpty)
         note(t('No suggested repayments remain.','暂无待结清还款。'))
       else
         for(final transfer in snapshot.settlements.transfers)
-          line(person(transfer.fromUserId)+' pays '+person(transfer.toUserId),
+          line(person(transfer.fromUserId)+t(' pays ',' 支付给 ')+person(transfer.toUserId),
             estimated(transfer.cents)),
-      note('These are suggestions, not proof of payment. Members can agree to rounded amounts.'),
+      note(t('These are suggestions, not proof of payment. Members can agree to rounded amounts.',
+        '仅供还款参考，并非付款证明；成员可协商四舍五入金额。')),
       heading(t('Member balances','成员结算余额')),
       for(final balance in snapshot.settlements.balances)
         line(person(balance.userId),
-          balance.cents==0?'Settled':
-            balance.cents>0?'To receive: '+estimated(balance.cents):
-              'To pay: '+estimated(-balance.cents)),
+          balance.cents==0?t('Settled','已结清'):
+            balance.cents>0?t('To receive: ','应收：')+estimated(balance.cents):
+              t('To pay: ','应付：')+estimated(-balance.cents)),
       heading(t('Common Fund - ','共同基金 - ')+spendingCurrency),
       line(t('Contributions received','已收贡献金额'),spending(snapshot.fundContributionsCents)),
       line(t('Fund purchases','共同基金支出'),spending(snapshot.fundSpentCents)),
@@ -118,7 +121,8 @@ class TripClosingPdf {
       line(t('Contribution target','贡献目标'),spending(snapshot.fundTargetCents)),
       line(t('Still to collect','仍待收取'),spending(snapshot.fundOutstandingCents)),
       if(!snapshot.fundReconciles)
-        note('WARNING: Fund balance does not reconcile with received funds, purchases and refunds.'),
+        note(t('WARNING: Fund balance does not reconcile with contributions, purchases and refunds.',
+          '警告：基金余额与贡献、支出和退款总额不一致。')),
       heading(t('Repayment confirmations','已确认还款')),
       line(t('Confirmed receipts','已确认收款'),snapshot.activeRepayments.toString()),
       line(t('Reversed receipts','已撤销收款'),snapshot.reversedRepayments.toString()),
@@ -127,7 +131,7 @@ class TripClosingPdf {
           person(row['to_user_id'] as String),
           money(row['paid_currency'] as String,
             SettlementCalculator.cents(row['paid_amount']))+
-          (row['reversed_at']!=null?' (REVERSED)':' (CONFIRMED)')),
+          (row['reversed_at']!=null?t(' (REVERSED)','（已撤销）'):t(' (CONFIRMED)','（已确认）'))),
       heading(t('Confirmed Common Fund refunds','已确认的共同基金退款')),
       if(data.fundRefunds.isEmpty) note(t('No confirmed refunds.','暂无已确认退款。'))
       else for(final row in data.fundRefunds)
@@ -137,11 +141,13 @@ class TripClosingPdf {
       line(t('Pending expenses on this device','本机待同步开销'),
         snapshot.pendingLocalCount.toString()),
       if(snapshot.pendingLocalCount>0)
-        note('Some expenses on this device have not synced; other members may have unsynced expenses too.'),
+        note(t('Expenses on this device have not all synced; other members may have unsynced items.',
+          '本机仍有开销未同步；其他成员也可能有未同步记录。')),
       if(snapshot.fundOutstandingCents>0)
-        note('Contribution targets are requests only, not received money.'),
-      note('PayNow numbers and private bank details are never included. '
-        'Anyone you share this PDF with may retain a copy.'),
+        note(t('Contribution targets are requests only, not received money.',
+          '贡献目标只是待收金额，并非实际收到的资金。')),
+      note(t('PayNow numbers and bank details are excluded. Recipients may retain this PDF.',
+        '报告不包含 PayNow 号码或银行资料；收件人可能保留此 PDF。')),
     ];
 
     // Opt-in only: private receipt files are downloaded with the signed-in
@@ -160,7 +166,7 @@ class TripClosingPdf {
           content.add(pw.Column(
             crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
               heading((receipt['expense_id']!=null ?
-                'Shared expense' : 'Common Fund')+' receipt '+(count+1).toString()),
+                t('Shared expense','共同开销') : t('Common Fund','共同基金'))+t(' receipt ',' 收据 ')+(count+1).toString()),
               pw.Image(pw.MemoryImage(bytes),
                 height:220,fit:pw.BoxFit.contain),
             ]));
@@ -168,7 +174,8 @@ class TripClosingPdf {
         }catch(_){skipped++;}
       }
       if(skipped>0)content.add(note(skipped.toString()+
-        ' receipt image(s) omitted (limit or download error).'));
+        t(' receipt image(s) omitted (limit or download error).',
+          ' 张收据照片未附上（数量上限或下载失败）。')));
     }
 
     pdf.addPage(pw.MultiPage(
