@@ -226,5 +226,10 @@
   "tripReportReceiptNotice": "选填 · 最多 8 张。任何收到 PDF 的人都可以保存这些照片。",
   "tripReportWarning": "需要网络连接及最新同步记录。PDF 只是快照，并非付款确认或正式基金结算。目前导出的 PDF 使用英文标题及支持拉丁文字的字体。",
   "tripReportGenerating": "正在生成 PDF…",
-  "tripReportSharePdf": "生成并分享 PDF"
+  "tripReportSharePdf": "生成并分享 PDF",
+  "offlineSkipReceipt": "跳过收据照片",
+  "offlineSkipReceiptWarning": "这笔开销已记录到群组。确定停止上传照片吗？本机照片将被删除，但不会删除或修改开销。",
+  "offlineExpenseAlreadySaved": "开销已确认，只有收据照片尚未上传。",
+  "offlineSyncProblem": "同步详情",
+  "offlineReceiptsHeading": "收据照片等待上传"
 }

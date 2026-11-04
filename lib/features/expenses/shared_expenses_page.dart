@@ -281,6 +281,31 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
     }
   }
 
+  Future<void> skipQueuedReceipt(Map<String,Object?> item) async {
+    final l=AppLocalizations.of(context)!;
+    final proceed=await showDialog<bool>(context:context,
+      builder:(ctx)=>AlertDialog(
+        title:Text(l.offlineSkipReceipt),
+        content:Text(l.offlineSkipReceiptWarning),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(ctx,false),
+            child:Text(l.cloudCancel)),
+          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+            child:Text(l.offlineSkipReceipt)),
+        ],
+      ));
+    if(proceed!=true || !mounted)return;
+    try {
+      await OfflineExpenseOutbox.instance.skipReceiptForConfirmedExpense(
+        operationId:item['operation_id'] as String,
+        groupId:widget.groupId);
+      if(mounted)await refresh();
+    }catch(e) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(e.toString())));
+    }
+  }
+
   Future<void> showQueuedExpense(Map<String,Object?> item) async {
     final l=AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
@@ -298,8 +323,32 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
               style:Theme.of(context).textTheme.bodySmall),
             if (item['last_error'] != null) ...[
               const SizedBox(height:12),
+              Text(l.offlineSyncProblem,
+                style:Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height:4),
               SelectableText(item['last_error'] as String,
                 style:Theme.of(context).textTheme.bodySmall),
+            ],
+            const SizedBox(height:16),
+            OutlinedButton.icon(
+              onPressed:busy?null:(){
+                Navigator.pop(ctx);
+                refresh();
+              },
+              icon:const Icon(Icons.sync_rounded),
+              label:Text(l.offlineRetry),
+            ),
+            if(item['status']=='receipt_pending' &&
+                item['remote_expense_id']!=null) ...[
+              const SizedBox(height:8),
+              Text(l.offlineExpenseAlreadySaved,
+                style:Theme.of(context).textTheme.bodySmall),
+              TextButton(
+                onPressed:busy?null:(){
+                  Navigator.pop(ctx);
+                  skipQueuedReceipt(item);
+                },
+                child:Text(l.offlineSkipReceipt)),
             ],
           ]),
       ),
@@ -567,7 +616,9 @@ class _SharedExpensesPageState extends State<SharedExpensesPage> with WidgetsBin
               Icon(Icons.cloud_upload_outlined, size: 21,
                 color: scheme.primary),
               const SizedBox(width: 8),
-              Expanded(child: Text(l.offlinePendingHeading,
+              Expanded(child: Text(
+                queuedExpenses.every((item) => item['status']=='receipt_pending')
+                  ? l.offlineReceiptsHeading : l.offlinePendingHeading,
                 style: Theme.of(context).textTheme.titleMedium)),
               TextButton.icon(onPressed: busy ? null : refresh,
                 icon: const Icon(Icons.sync_rounded),

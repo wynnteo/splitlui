@@ -226,5 +226,10 @@
   "tripReportReceiptNotice": "Optional · Up to 8 receipts. Anyone you send the PDF to can keep the images.",
   "tripReportWarning": "Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.",
   "tripReportGenerating": "Preparing PDF…",
-  "tripReportSharePdf": "Create and share PDF"
+  "tripReportSharePdf": "Create and share PDF",
+  "offlineSkipReceipt": "Skip photo",
+  "offlineSkipReceiptWarning": "This expense is already saved for the group. Stop trying to upload its photo? This will delete the local photo copy, but will NOT remove or change the expense.",
+  "offlineExpenseAlreadySaved": "The expense is confirmed. Only its receipt photo is waiting to upload.",
+  "offlineSyncProblem": "Sync details",
+  "offlineReceiptsHeading": "Receipt photos waiting to upload"
 }
