@@ -81,7 +81,6 @@ class ProPreviewPage extends StatelessWidget {
                   '即将推出。此页面不会收取费用。订阅及永久购买将需要与账号关联、'
                   '经过应用商店验证，并支持恢复购买。')),
               )),
-            ),
           ],
         ),
       ),
