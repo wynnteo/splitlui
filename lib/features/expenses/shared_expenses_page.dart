@@ -7,6 +7,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'receipt_capture.dart';
 import 'offline_expense_outbox.dart';
+import 'split_allocation.dart';
 import 'fund_purchase_edit_page.dart';
 
 class SharedExpenseApi {
@@ -77,14 +78,16 @@ class SharedExpenseApi {
     required String title, required double amount,
     required String currency, required double rateToSpending,
     required String paidBy, required List<String> participants,
+    required List<int> shareCents,
     DateTime? receiptDate,
   }) async {
-    await db.rpc('edit_trip_expense',params: {
+    await db.rpc('edit_trip_expense_custom',params: {
       'p_group': groupId, 'p_expense': original['id'],
       'p_expected_updated_at': original['updated_at'],
       'p_title': title.trim(), 'p_amount': amount,
       'p_currency':currency, 'p_rate_to_spending':rateToSpending,
-      'p_paid_by':paidBy,'p_split_between':participants,
+      'p_paid_by':paidBy,'p_members':participants,
+      'p_amounts':shareCents.map((v)=>v/100).toList(),
       'p_date': receiptDate == null ? null :
           '${receiptDate.year.toString().padLeft(4,'0')}-'
           '${receiptDate.month.toString().padLeft(2,'0')}-'
@@ -719,6 +722,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   final title = TextEditingController();
   final amount = TextEditingController();
   final selected = <String>{};
+  ExpenseSplitMode splitMode = ExpenseSplitMode.equal;
+  final splitInputs = <String,String>{};
   final exchangeRate = TextEditingController();
   static const currencies = [
     'SGD','JPY','MYR','THB','USD','EUR','GBP','KRW','TWD','IDR','CNY','AUD',
@@ -797,11 +802,62 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
   }
 
+  List<String> get splitMemberIds => widget.members
+    .map((m)=>m['user_id'] as String)
+    .where(selected.contains).toList();
+
+  void setSplitMode(ExpenseSplitMode mode) {
+    setState(() {
+      splitMode=mode;
+      resetSplitDefaults();
+    });
+  }
+
+  void resetSplitDefaults() {
+    final ids=splitMemberIds;
+    final total=((double.tryParse(amount.text.trim()) ?? 0)*100).round();
+    splitInputs.clear();
+    if(ids.isEmpty)return;
+    final defaults=SplitAllocation.calculate(
+      totalCents:modeDefaultTotal(total,splitMode),
+      mode:ExpenseSplitMode.equal,
+      values:List<double>.filled(ids.length,1)).cents;
+    for(var i=0;i<ids.length;i++) {
+      splitInputs[ids[i]]=switch(splitMode) {
+        ExpenseSplitMode.equal => '',
+        ExpenseSplitMode.exact => (defaults[i]/100).toStringAsFixed(2),
+        ExpenseSplitMode.percent => (defaults[i]/100).toStringAsFixed(2),
+        ExpenseSplitMode.shares => '1',
+      };
+    }
+  }
+
+  int modeDefaultTotal(int cents,ExpenseSplitMode mode)=>
+    mode==ExpenseSplitMode.percent ? 10000 : (cents>0?cents:100);
+
+  SplitAllocation get calculatedShares {
+    final ids=splitMemberIds;
+    final n=double.tryParse(amount.text.trim());
+    if(n==null || !n.isFinite || n<=0 ||
+      n*100>9000000000000000000) {
+      throw const FormatException('Enter a valid expense amount');
+    }
+    final totalCents=(n*100).round();
+    final weights=ids.map((id)=>splitMode==ExpenseSplitMode.equal ?
+      1.0 : double.tryParse(splitInputs[id]??'') ?? double.nan).toList();
+    return SplitAllocation.calculate(totalCents:totalCents,
+      mode:splitMode,values:weights);
+  }
+
   Future<void> loadExistingShares() async {
     try {
       final shares = await widget.api.shares(widget.initialExpense!['id'] as String);
       if (mounted) setState(() {
         selected..clear()..addAll(shares.map((x) => x['user_id'] as String));
+        splitMode=ExpenseSplitMode.exact;
+        splitInputs..clear()..addEntries(shares.map((x)=>MapEntry(
+          x['user_id'] as String,
+          (x['share_amount'] as num).toStringAsFixed(2))));
         existingSharesLoading = false;
       });
     } catch (e) {
@@ -853,6 +909,16 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         SnackBar(content: Text(l.expenseFundInsufficient)));
       return;
     }
+    List<int> splitCents=[];
+    if(!payFromFund) {
+      try {
+        splitCents=calculatedShares.cents;
+      } catch(e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content:Text(e.toString())));
+        return;
+      }
+    }
     setState(() => saving = true);
     try {
       if (widget.initialExpense != null) {
@@ -865,8 +931,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           rateToSpending:expenseCurrency == widget.currency
             ? 1 : double.parse(exchangeRate.text.trim()),
           paidBy:payer!,
-          participants:widget.members.map((m)=>m['user_id'] as String)
-            .where(selected.contains).toList(),
+          participants:splitMemberIds,
+          shareCents:splitCents,
           receiptDate:receiptDate,
         );
         if (mounted) Navigator.pop(context,true);
@@ -883,9 +949,8 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           rateToSpending: expenseCurrency == widget.currency
             ? '1' : exchangeRate.text.trim(),
           paidBy: payer!,
-          participants: widget.members
-            .map((m) => m['user_id'] as String)
-            .where(selected.contains).toList(),
+          participants:splitMemberIds,
+          shareCents:splitCents,
           receipt: receipt?.jpeg,
           receiptDate: receiptDate,
         );
