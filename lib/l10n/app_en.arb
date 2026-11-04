@@ -231,5 +231,12 @@
   "offlineSkipReceiptWarning": "This expense is already saved for the group. Stop trying to upload its photo? This will delete the local photo copy, but will NOT remove or change the expense.",
   "offlineExpenseAlreadySaved": "The expense is confirmed. Only its receipt photo is waiting to upload.",
   "offlineSyncProblem": "Sync details",
-  "offlineReceiptsHeading": "Receipt photos waiting to upload"
+  "offlineReceiptsHeading": "Receipt photos waiting to upload",
+  "splitModeEqual": "Equal",
+  "splitModeAmount": "Amount",
+  "splitModePercent": "Percent",
+  "splitModeShares": "Shares",
+  "splitEditHint": "Enter each person's amount, percentage or number of shares. The total must match the bill.",
+  "splitAllocationValid": "Split total matches the bill",
+  "splitAllocationInvalid": "Check the amount and split values. Exact amounts must match the bill; percentages must add to 100%."
 }
