@@ -764,7 +764,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
             ? '1' : detected == widget.settlementCurrency
               ? widget.groupRate.toString() : '';
         }
-        receiptDate ??= picked.hints.date;
+        if (!picked.hints.dateNeedsReview) receiptDate ??= picked.hints.date;
       });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -1217,6 +1217,10 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                     const SizedBox(height:8),
                     Text(l.expenseReceiptDate,
                       style:Theme.of(context).textTheme.labelMedium),
+                    if(receipt!.hints.dateNeedsReview)
+                      Padding(padding:const EdgeInsets.only(top:4,bottom:4),
+                        child:Text(l.receiptAmbiguousDateWarning,
+                          style:Theme.of(context).textTheme.bodySmall)),
                     Align(alignment:Alignment.centerLeft,
                       child:ActionChip(
                         avatar:const Icon(Icons.event_outlined,size:18),
