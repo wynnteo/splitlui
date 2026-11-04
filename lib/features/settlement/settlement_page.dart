@@ -526,6 +526,7 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
   String currency = 'SGD';
   bool saving = false;
   bool loading = true;
+  bool settleFull = true;
 
   List<String> get currencies => {
     ...RepaymentPreferences.currencies,
@@ -596,7 +597,7 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
     setState(() => saving = true);
     try {
       await Supabase.instance.client.rpc(
-        'record_trip_repayment_currency',
+        'record_trip_repayment_agreed',
         params: {
           'p_group': widget.groupId,
           'p_from': widget.fromUserId,
@@ -605,6 +606,7 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
           'p_currency': currency,
           'p_rate_to_spending': double.parse(rate.text.trim()),
           'p_note': note.text.trim(),
+          'p_settle_full': settleFull,
         },
       );
       if (mounted) Navigator.pop(context, true);
@@ -683,7 +685,15 @@ class _RepaymentReceiptFormState extends State<RepaymentReceiptForm> {
                 },
               ),
             ],
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
+            SwitchListTile.adaptive(
+              contentPadding:EdgeInsets.zero,
+              title:Text(l.repaymentSettleFull),
+              value:settleFull,
+              onChanged:saving || loading ? null :
+                (value)=>setState(()=>settleFull=value),
+            ),
+            const SizedBox(height: 12),
             LuiFormLabel(l.repaymentNote),
             TextFormField(
               controller: note,
