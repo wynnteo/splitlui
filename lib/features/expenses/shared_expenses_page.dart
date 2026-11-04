@@ -774,6 +774,22 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
     }
   }
 
+  void applyReceiptMerchant(String value) {
+    setState(()=>title.text=value);
+  }
+
+  void applyReceiptAmount(String value) {
+    setState(()=>amount.text=value);
+  }
+
+  void applyReceiptCurrency(String value) {
+    chooseCurrency(value);
+  }
+
+  void applyReceiptDate(DateTime value) {
+    setState(()=>receiptDate=value);
+  }
+
   @override void initState() {
     super.initState();
     final original = widget.initialExpense;
@@ -1140,6 +1156,78 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                   const SizedBox(height: 8),
                   Text(l.receiptReviewHint,
                     style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height:10),
+                  Text(l.receiptSuggestionsTitle,
+                    style:Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height:6),
+                  Text(l.receiptSuggestionsSubtitle,
+                    style:Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height:10),
+                  if(receipt!.hints.merchant != null) ...[
+                    Text(l.expenseTitle,
+                      style:Theme.of(context).textTheme.labelMedium),
+                    const SizedBox(height:4),
+                    Align(alignment:Alignment.centerLeft,
+                      child:ActionChip(
+                        avatar:const Icon(Icons.storefront_outlined,size:18),
+                        label:Text(receipt!.hints.merchant!,
+                          overflow:TextOverflow.ellipsis),
+                        onPressed:saving?null:()=>applyReceiptMerchant(
+                          receipt!.hints.merchant!))),
+                    const SizedBox(height:8),
+                  ],
+                  Text(l.expenseAmount,
+                    style:Theme.of(context).textTheme.labelMedium),
+                  if(receipt!.totalAnalysis.ambiguous)
+                    Padding(padding:const EdgeInsets.only(top:4),
+                      child:Text(l.receiptMultipleTotalsWarning,
+                        style:TextStyle(
+                          color:Theme.of(context).colorScheme.error))),
+                  if(receipt!.totalAnalysis.candidates.isEmpty)
+                    Padding(padding:const EdgeInsets.only(top:4),
+                      child:Text(l.receiptNoTotalFound,
+                        style:Theme.of(context).textTheme.bodySmall)),
+                  if(receipt!.totalAnalysis.candidates.isNotEmpty) ...[
+                    const SizedBox(height:4),
+                    Wrap(spacing:8,runSpacing:4,children:[
+                      for(final candidate in
+                        receipt!.totalAnalysis.candidates.take(4))
+                        ActionChip(
+                          avatar:const Icon(Icons.check_circle_outline,
+                            size:18),
+                          label:Text(expenseCurrency+' '+candidate.amount),
+                          tooltip:candidate.label,
+                          onPressed:saving?null:()=>applyReceiptAmount(
+                            candidate.amount)),
+                    ]),
+                  ],
+                  if(receipt!.hints.currency != null &&
+                      currencies.contains(receipt!.hints.currency)) ...[
+                    const SizedBox(height:8),
+                    Text(l.expenseCurrency,
+                      style:Theme.of(context).textTheme.labelMedium),
+                    Align(alignment:Alignment.centerLeft,
+                      child:ActionChip(
+                        avatar:const Icon(Icons.currency_exchange,size:18),
+                        label:Text(receipt!.hints.currency!),
+                        onPressed:saving?null:()=>applyReceiptCurrency(
+                          receipt!.hints.currency!))),
+                  ],
+                  if(receipt!.hints.date != null) ...[
+                    const SizedBox(height:8),
+                    Text(l.expenseReceiptDate,
+                      style:Theme.of(context).textTheme.labelMedium),
+                    Align(alignment:Alignment.centerLeft,
+                      child:ActionChip(
+                        avatar:const Icon(Icons.event_outlined,size:18),
+                        label:Text(
+                          receipt!.hints.date!.day.toString().padLeft(2,'0')+
+                          '/'+receipt!.hints.date!.month.toString().padLeft(2,'0')+
+                          '/'+receipt!.hints.date!.year.toString()),
+                        onPressed:saving?null:()=>applyReceiptDate(
+                          receipt!.hints.date!))),
+                  ],
+                  const SizedBox(height:6),
                   TextButton.icon(
                     onPressed: saving ? null :
                       () => setState(() => receipt = null),
