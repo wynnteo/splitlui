@@ -9,15 +9,15 @@ import 'receipt_capture.dart';
 import 'offline_expense_outbox.dart';
 import 'split_allocation.dart';
 import 'fund_purchase_edit_page.dart';
+import '../groups/group_paged_query.dart';
 
 class SharedExpenseApi {
   final SupabaseClient db = Supabase.instance.client;
 
   Future<List<Map<String, dynamic>>> list(String groupId) async {
-    final rows = await db.from('trip_expenses')
-        .select('id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_by,created_at,updated_at,receipt_date')
-        .eq('group_id', groupId).order('created_at', ascending: false);
-    return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return GroupPagedQuery(db).read(
+      table:'trip_expenses',groupId:groupId,
+      columns:'id,title,amount,currency,rate_to_spending,amount_spending,paid_by,created_by,created_at,updated_at,receipt_date');
   }
 
   Future<Map<String,dynamic>?> fundBalance(String groupId) async {
@@ -26,11 +26,10 @@ class SharedExpenseApi {
   }
 
   Future<List<Map<String,dynamic>>> fundPurchases(String groupId) async {
-    final rows = await db.from('trip_fund_entries')
-        .select('id,description,amount,original_amount,original_currency,rate_to_spending,recorded_by,receipt_date,created_at,updated_at')
-        .eq('group_id', groupId).eq('entry_type','expense')
-        .order('created_at',ascending:false);
-    return rows.map((r) => Map<String,dynamic>.from(r)).toList();
+    return GroupPagedQuery(db).read(
+      table:'trip_fund_entries',groupId:groupId,
+      columns:'id,description,amount,original_amount,original_currency,rate_to_spending,recorded_by,receipt_date,created_at,updated_at',
+      filterColumn:'entry_type',filterValue:'expense');
   }
 
   Future<String> addFundPurchase({
@@ -744,6 +743,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   bool saving = false;
   bool readingReceipt = false;
   bool existingSharesLoading = false;
+  String? existingSharesError;
   DateTime? receiptDate;
   bool currencyManuallySet = false;
   ReceiptDraft? receipt;
@@ -874,22 +874,26 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   Future<void> loadExistingShares() async {
+    if(widget.initialExpense==null)return;
+    if(mounted)setState(() {
+      existingSharesLoading=true;
+      existingSharesError=null;
+    });
     try {
-      final shares = await widget.api.shares(widget.initialExpense!['id'] as String);
-      if (mounted) setState(() {
-        selected..clear()..addAll(shares.map((x) => x['user_id'] as String));
+      final shares=await widget.api.shares(
+        widget.initialExpense!['id'] as String);
+      if(shares.isEmpty)throw StateError('No saved expense shares found');
+      if(mounted)setState(() {
+        selected..clear()..addAll(shares.map((x)=>x['user_id'] as String));
         splitMode=ExpenseSplitMode.exact;
         splitInputs..clear()..addEntries(shares.map((x)=>MapEntry(
           x['user_id'] as String,
           (x['share_amount'] as num).toStringAsFixed(2))));
-        existingSharesLoading = false;
       });
-    } catch (e) {
-      if (mounted) {
-        // Do not allow saving an incomplete split when the read fails.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())));
-      }
+    }catch(e) {
+      if(mounted)setState(()=>existingSharesError=e.toString());
+    }finally {
+      if(mounted)setState(()=>existingSharesLoading=false);
     }
   }
 
@@ -919,7 +923,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
   }
 
   Future<void> save() async {
-    if (saving || existingSharesLoading ||
+    if (saving || existingSharesLoading || existingSharesError!=null ||
         !(form.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
     if (!payFromFund && (selected.isEmpty || payer == null)) {
@@ -1078,6 +1082,29 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
       body: SafeArea(top: false, child: Form(key: form,
         child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), children: [
+          if(widget.initialExpense!=null && existingSharesLoading) ...[
+            const LinearProgressIndicator(),
+            const SizedBox(height:12),
+          ],
+          if(widget.initialExpense!=null && existingSharesError!=null) ...[
+            Card(child:Padding(
+              padding:const EdgeInsets.all(14),
+              child:Column(crossAxisAlignment:CrossAxisAlignment.start,
+                children:[
+                  Text('Unable to load the saved split. No changes were made.',
+                    style:TextStyle(color:Theme.of(context).colorScheme.error)),
+                  const SizedBox(height:6),
+                  Text(existingSharesError!,
+                    style:Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height:8),
+                  OutlinedButton.icon(
+                    onPressed:loadExistingShares,
+                    icon:const Icon(Icons.refresh),
+                    label:Text(l.cloudRefresh)),
+                ]),
+            )),
+            const SizedBox(height:12),
+          ],
           LuiFormLabel(l.expenseTitle),
           TextFormField(
             controller: title, maxLength: 120,
@@ -1389,7 +1416,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
           ],
           const SizedBox(height: 28),
           FilledButton(
-            onPressed: saving || existingSharesLoading ? null : save,
+            onPressed: saving || existingSharesLoading || existingSharesError!=null ? null : save,
             child: saving
               ? const SizedBox(height: 20, width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2))

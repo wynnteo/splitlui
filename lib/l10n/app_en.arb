@@ -224,7 +224,7 @@
   "tripReportContents": "Original-currency spending, combined estimates, remaining repayments, Common Fund contributions, refunds, outstanding targets and reconciliation checks.",
   "tripReportIncludeReceipts": "Include receipt photos",
   "tripReportReceiptNotice": "Optional · Up to 8 receipts. Anyone you send the PDF to can keep the images.",
-  "tripReportWarning": "Requires internet and the latest synced records. The PDF is a snapshot, not a confirmed payment or formal fund closure. Exported PDFs currently use English labels and Latin-compatible fonts.",
+  "tripReportWarning": "Requires internet and the latest synced records. The PDF is a snapshot, not confirmation of payment or formal fund closure. Reports support English and Simplified Chinese.",
   "tripReportGenerating": "Preparing PDF…",
   "tripReportSharePdf": "Create and share PDF",
   "offlineSkipReceipt": "Skip photo",

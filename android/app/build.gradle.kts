@@ -29,11 +29,21 @@ android {
         versionName = flutter.versionName
     }
 
+    // Same no-key.properties setup as the user's other Lui apps.
+    // Keep the shared upload key OUTSIDE GitHub. Never fall back to debug
+    // signing for a release artifact intended for Play Console.
+    signingConfigs {
+        create("release") {
+            storeFile = file("${System.getProperty("user.home")}/my-release-key.jks")
+            storePassword = System.getenv("SPLITLUI_STORE_PASSWORD")
+            keyAlias = "my-key-alias"
+            keyPassword = System.getenv("SPLITLUI_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             // R8: optional ML Kit recogniser classes are not bundled.
             // Keep narrow warnings in the app's release ProGuard file.
             proguardFiles(

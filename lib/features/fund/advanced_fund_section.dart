@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../ui/lui_style.dart';
 import 'fund_reconciliation.dart';
+import '../groups/group_paged_query.dart';
 
 class AdvancedFundSection extends StatefulWidget {
   const AdvancedFundSection({super.key,required this.groupId,
@@ -37,13 +38,16 @@ class _AdvancedFundSectionState extends State<AdvancedFundSection> {
     setState(()=>busy=true);
     try {
       final data=await Future.wait<dynamic>([
-        db.from('trip_fund_targets').select('member_id,target_amount')
-          .eq('group_id',widget.groupId),
-        db.from('trip_fund_topup_requests')
-          .select('id,member_id,requested_amount,note,cancelled_at')
-          .eq('group_id',widget.groupId).order('created_at',ascending:false),
-        db.from('trip_fund_refunds').select('member_id,amount,note,created_at')
-          .eq('group_id',widget.groupId).order('created_at',ascending:false),
+        GroupPagedQuery(db).read(
+          table:'trip_fund_targets',groupId:widget.groupId,
+          columns:'member_id,target_amount',orderBy:'member_id',
+          secondOrder:null,ascending:true),
+        GroupPagedQuery(db).read(
+          table:'trip_fund_topup_requests',groupId:widget.groupId,
+          columns:'id,member_id,requested_amount,note,cancelled_at'),
+        GroupPagedQuery(db).read(
+          table:'trip_fund_refunds',groupId:widget.groupId,
+          columns:'id,member_id,amount,note,created_at'),
       ]);
       if(mounted)setState(() {targets=maps(data[0]);requests=maps(data[1]);
         refunds=maps(data[2]);error=null;});
