@@ -8,6 +8,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'receipt_capture.dart';
 
+/// Classifies a queued operation without relying on network error messages.
+/// Once the server has returned an expense ID, retry only the receipt step.
+class OfflineSyncPolicy {
+  static bool shouldContinueAfterFailure({required bool expenseCommitted}) =>
+    expenseCommitted;
+
+  static String failedStatus({required bool expenseCommitted}) =>
+    expenseCommitted ? 'receipt_pending' : 'needs_review';
+}
+
 /// A durable, author-scoped outbox. Server remains authoritative.
 /// Fund withdrawals and repayments deliberately do not use this queue.
 class OfflineExpenseOutbox {
@@ -193,8 +203,8 @@ class OfflineExpenseOutbox {
     return rows;
   }
 
-  /// Retry-safe even when the server committed an expense but the mobile
-  /// connection failed before the response was received.
+  /// An immutable expense is committed at most once by its operation UUID.
+  /// A receipt failure must NOT block unrelated queued expenses.
   Future<void> sync(String groupId) async {
     if (_syncing) return;
     final owner = _userId;
@@ -202,66 +212,82 @@ class OfflineExpenseOutbox {
     try {
       final db = await database;
       final rows = await db.query('offline_expenses',
-        where: 'group_id=? AND user_id=?',
-        whereArgs: [groupId, owner],orderBy: 'created_at ASC');
+        where:'group_id=? AND user_id=?',
+        whereArgs:[groupId,owner],orderBy:'created_at ASC');
       for (final row in rows) {
+        // Never replay another account's pending expense after a sign-out.
+        if (Supabase.instance.client.auth.currentUser?.id != owner) break;
         final id = row['operation_id'] as String;
         final receiptPath = row['receipt_path'] as String?;
         var remoteId = row['remote_expense_id'] as String?;
         try {
           if (remoteId == null) {
+            // A lost response is safe to retry: server accepts exactly one
+            // immutable request per operation_id, including after deletion.
             remoteId = (await Supabase.instance.client.rpc(
-              'add_trip_expense_offline', params: {
-                'p_operation': id,
-                'p_group': groupId,
-                'p_title': row['title'],
-                'p_amount': num.parse(row['amount'] as String),
-                'p_currency': row['currency'],
+              'add_trip_expense_offline',params:{
+                'p_operation':id,
+                'p_group':groupId,
+                'p_title':row['title'],
+                'p_amount':num.parse(row['amount'] as String),
+                'p_currency':row['currency'],
                 'p_rate_to_spending':
                   num.parse(row['rate_to_spending'] as String),
-                'p_paid_by': row['paid_by'],
-                'p_split_between': List<String>.from(
+                'p_paid_by':row['paid_by'],
+                'p_split_between':List<String>.from(
                   jsonDecode(row['participants_json'] as String) as List),
-                'p_date': row['receipt_date'],
+                'p_date':row['receipt_date'],
               })).toString();
-            await db.update('offline_expenses', {
-              'remote_expense_id': remoteId,
-              'status': receiptPath == null ? 'synced' : 'receipt_pending',
-              'last_error': null,
-            },where: 'operation_id=? AND user_id=?',whereArgs: [id,owner]);
+            // Persist remote ID BEFORE attempting any receipt upload. If the
+            // image fails later, the financial expense is never posted twice.
+            await db.update('offline_expenses',{
+              'remote_expense_id':remoteId,
+              'status':receiptPath==null?'synced':'receipt_pending',
+              'last_error':null,
+            },where:'operation_id=? AND user_id=?',whereArgs:[id,owner]);
           }
 
           if (receiptPath != null) {
-            // If upload+association succeeded but acknowledgement was lost,
-            // never upload the receipt twice.
-            final storage = ReceiptStorage();
-            final existing = await storage.get(expenseId: remoteId);
-            if (existing == null) {
-              final bytes = await File(receiptPath).readAsBytes();
+            // If the previous image upload succeeded but the response was
+            // lost, look for the existing mapping instead of uploading twice.
+            final storage=ReceiptStorage();
+            final linked=await storage.get(expenseId:remoteId);
+            if (linked==null) {
+              final photo=File(receiptPath);
+              if (!await photo.exists()) {
+                throw StateError('Receipt photo missing on this device');
+              }
               await storage.upload(
-                groupId:groupId, expenseId:remoteId, jpeg:bytes);
+                groupId:groupId,expenseId:remoteId,
+                jpeg:await photo.readAsBytes());
             }
           }
 
-          // Only after both operations succeed is the local record retired.
           await db.delete('offline_expenses',
             where:'operation_id=? AND user_id=?',whereArgs:[id,owner]);
           if (receiptPath != null) {
-            try { await File(receiptPath).delete(); } catch (_) {}
+            try {await File(receiptPath).delete();} catch (_) {}
           }
         } catch (e) {
-          // Keep the immutable request and any saved server UUID. Next retry
-          // resumes without creating a second expense.
+          final expenseCommitted=remoteId!=null;
+          final text=e.toString();
           await db.update('offline_expenses',{
-            'status': remoteId == null ? 'needs_review' : 'receipt_pending',
-            'last_error': e.toString().length > 300
-              ? e.toString().substring(0,300) : e.toString(),
+            'status':OfflineSyncPolicy.failedStatus(
+              expenseCommitted:expenseCommitted),
+            'last_error':text.length>300 ? text.substring(0,300):text,
           },where:'operation_id=? AND user_id=?',whereArgs:[id,owner]);
-          // A broken network should not spin through all subsequent items.
-          break;
+
+          // Financial create failures are ambiguous and may indicate no
+          // connection. Preserve strict ordering of unconfirmed requests.
+          // Receipt-only failures are independent: keep syncing subsequent
+          // expenses, without ever re-posting this already-confirmed expense.
+          if(!OfflineSyncPolicy.shouldContinueAfterFailure(
+            expenseCommitted:expenseCommitted))break;
         }
       }
-    } finally { _syncing = false; }
+    } finally {
+      _syncing=false;
+    }
   }
 
   /// We do not expose local Delete for ambiguous requests; after a timeout
