@@ -477,8 +477,8 @@ class _SharedGroupDetailState extends State<SharedGroupDetail> {
       context:context,
       builder:(dialogContext)=>AlertDialog(
         title:Text(l.groupRemoveMember),
-        content:Text(l.groupRemoveMemberWarning(
-          member['nickname'] as String)),
+        content:Text((member['nickname'] as String)+'\n\n'+
+          l.groupRemoveMemberWarning),
         actions:[
           TextButton(
             onPressed:()=>Navigator.pop(dialogContext,false),
