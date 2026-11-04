@@ -1195,7 +1195,7 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                         ActionChip(
                           avatar:const Icon(Icons.check_circle_outline,
                             size:18),
-                          label:Text(expenseCurrency+' '+candidate.amount),
+                          label:Text(candidate.amount),
                           tooltip:candidate.label,
                           onPressed:saving?null:()=>applyReceiptAmount(
                             candidate.amount)),
