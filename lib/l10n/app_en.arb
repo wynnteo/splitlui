@@ -215,5 +215,6 @@
   "fundRefundHistory": "Confirmed refunds",
   "fundNoRefunds": "No refunds confirmed yet.",
   "repaymentActualReceivedHint": "Enter the amount you actually received. A rounded or partial payment is fine.",
-  "settlementMoreDetails": "More details"
+  "settlementMoreDetails": "More details",
+  "repaymentSettleFull": "This payment settles the full amount"
 }
