@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SplitLui uses your camera to capture receipts for group expenses.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SplitLui accesses your photo library so you can attach receipt images to group expenses.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
