@@ -12,10 +12,13 @@ abstract final class LuiStyle {
   static ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: blue,
+      seedColor: dark ? const Color(0xFF9A87CA) : blue,
       brightness: brightness,
       primary: dark ? const Color(0xFFC8B6FF) : teal,
       surface: dark ? const Color(0xFF262430) : Colors.white,
+    ).copyWith(
+      surfaceContainer: dark ? const Color(0xFF2D2A37) : null,
+      surfaceContainerHighest: dark ? const Color(0xFF383442) : null,
     );
     return ThemeData(
       useMaterial3: true,
