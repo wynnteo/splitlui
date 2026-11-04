@@ -50,4 +50,14 @@ void main() {
     expect(ReceiptHints.parse('RESTORAN\nTOTAL RM100.00').currency,'MYR');
   });
 
+  test('Ambiguous numeric dates require explicit review', () {
+    final ambiguous=ReceiptHints.parse('COFFEE\n02/04/2025');
+    expect(ambiguous.date,DateTime(2025,4,2));
+    expect(ambiguous.dateNeedsReview,isTrue);
+    expect(ReceiptHints.parse('COFFEE\n25/04/2025')
+      .dateNeedsReview,isFalse);
+    expect(ReceiptHints.parse('COFFEE\n2025-04-02')
+      .dateNeedsReview,isFalse);
+  });
+
 }
