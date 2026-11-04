@@ -203,6 +203,32 @@ class OfflineExpenseOutbox {
     return rows;
   }
 
+  /// Retire ONLY the local photo retry after an expense has already been
+  /// committed on Supabase. This never edits or deletes the financial row.
+  /// Intended for photos missing from the device or permanently unusable.
+  Future<void> skipReceiptForConfirmedExpense({
+    required String operationId,
+    required String groupId,
+  }) async {
+    final owner=_userId;
+    final db=await database;
+    final records=await db.query('offline_expenses',
+      where:'operation_id=? AND user_id=? AND group_id=?',
+      whereArgs:[operationId,owner,groupId],limit:1);
+    if(records.isEmpty) throw StateError('Pending receipt not found');
+    final row=records.single;
+    if(row['remote_expense_id']==null || row['receipt_path']==null) {
+      throw StateError('Expense has not been confirmed yet');
+    }
+    // The server expense already exists, so clearing the local photo retry
+    // does not change anybody's balance, even if the photo was uploaded.
+    await db.delete('offline_expenses',
+      where:'operation_id=? AND user_id=? AND group_id=? AND remote_expense_id IS NOT NULL',
+      whereArgs:[operationId,owner,groupId]);
+    final path=row['receipt_path'] as String;
+    try {await File(path).delete();} catch (_) {}
+  }
+
   /// An immutable expense is committed at most once by its operation UUID.
   /// A receipt failure must NOT block unrelated queued expenses.
   Future<void> sync(String groupId) async {
