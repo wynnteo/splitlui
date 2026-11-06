@@ -29,9 +29,11 @@ class ProPreviewPage extends StatelessWidget {
                 fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Text(
-              tr('Your existing shared expenses, repayments and Common Fund '
-                 'remain available for free while Pro is being developed.',
-                 'Pro 功能仍在开发中。现有的共同开销、还款和共同基金功能继续免费使用。'),
+              tr('Create unlimited groups for free. Shared expenses, '
+                 'repayments, receipt scanning and Common Fund stay free. '
+                 'Pro will offer optional insights and organiser tools.',
+                 '免费创建无限群组。共同开销、还款、收据扫描和共同基金继续免费。'
+                 'Pro 将提供额外分析与群组管理工具。'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium),
             const SizedBox(height: 24),
