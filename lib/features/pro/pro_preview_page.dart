@@ -23,7 +23,7 @@ class ProPreviewPage extends StatelessWidget {
           children: [
             Icon(Icons.workspace_premium_rounded, size: 48, color: cs.primary),
             const SizedBox(height: 12),
-            Text(tr('More flexibility for your groups', '让每个群组更灵活'),
+            Text(tr('More insights, less admin', '更多分析，轻松管理'),
               textAlign: TextAlign.center,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold)),
@@ -36,13 +36,14 @@ class ProPreviewPage extends StatelessWidget {
               style: theme.textTheme.bodyMedium),
             const SizedBox(height: 24),
             ...[
-              (Icons.groups_outlined, tr('Unlimited groups', '无限群组')),
-              (Icons.document_scanner_outlined,
-                tr('Higher receipt scanning limits', '更高的收据扫描额度')),
-              (Icons.picture_as_pdf_outlined,
-                tr('Advanced trip reports', '高级旅程报告')),
               (Icons.insights_outlined,
                 tr('Advanced spending insights', '高级开销分析')),
+              (Icons.picture_as_pdf_outlined,
+                tr('Customisable trip reports', '可自定义旅程报告')),
+              (Icons.table_chart_outlined,
+                tr('Bulk spreadsheet export', '批量表格导出')),
+              (Icons.auto_awesome_outlined,
+                tr('Extra organiser conveniences', '更多群组管理便利工具')),
             ].map((feature) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Row(children: [
