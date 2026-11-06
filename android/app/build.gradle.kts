@@ -27,9 +27,9 @@ android {
     signingConfigs {
         create("release") {
             keyAlias = "my-key-alias"
-            keyPassword = System.getenv("SPLITLUI_KEY_PASSWORD") ?: ""
-            storeFile = file("${System.getProperty("user.home")}/my-release-key.jks")
-            storePassword = System.getenv("SPLITLUI_STORE_PASSWORD") ?: ""
+            keyPassword = "WyNn8989!@"
+            storeFile = file("/Users/wynnteo/my-release-key.jks")
+            storePassword = "WyNn8989!@"
         }
     }
 
