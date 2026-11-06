@@ -12,42 +12,41 @@ This is a staging design, **not yet an operational billing integration**.
 
 Display localized **store-provided** prices, subscription terms and durations before checkout; these are proposed amounts only. Apple monthly/yearly plans belong in the same subscription group. Lifetime is a separate non-consumable. Consider not selling lifetime and renewable Pro simultaneously to the same account.
 
-## Confirmed Free tier policy — annual group creation quota
+## Confirmed Free tier policy — unlimited groups
 
-**Decision: three newly created cloud groups per account per UTC calendar year.** This is a future enforcement specification, not an active limit.
+**Decision: unlimited group creation and joining are free.** The previously proposed limit of 3 new groups per calendar year is cancelled. There is no group-creation quota to enforce. No legacy quota counters or backend restrictions should be introduced.
 
-- A Free user can successfully create up to **3 groups during January 1–December 31 UTC**. The quota automatically refreshes on January 1 UTC. Display the renewal date in the user's local timezone, while using the server's UTC year for consistency.
-- Count every successful `create_trip_group` once. Never count a failed RPC or a mere attempt; handle concurrent attempts atomically. Existing groups from before the feature is enabled must be grandfathered and not silently counted retroactively.
-- Deleting or archiving a group **does not refund the annual creation count**. Do not erase accounting records when a group is deleted. Keep only minimal quota metadata, subject to the privacy/data-retention policy.
-- Joining somebody else's group, editing existing groups, viewing historical expenses, settling debts and Common Fund activity **never consumes a group creation slot**.
-- If Free usage reaches 3/3, show a bilingual message and an optional Pro preview. Do not submit the group creation RPC; never block existing group participation or financial obligations.
-- A verified Pro entitlement allows unlimited groups. If Pro later expires, previously created groups remain usable; only further creation above the Free annual quota is restricted.
-- Require a durable authenticated account before enforcing purchases or annual limits. **Current anonymous Supabase accounts can be reset with an app reinstall**, so an anonymous identity alone cannot reliably enforce account-level fair use.
-- Server-side enforcement belongs inside the same transaction as the group creation RPC. Use an account/year quota ledger plus an account-specific transactional lock or atomic UPSERT, and count only after successful creation. Enforce across Android/iOS and multiple devices. Never trust a client-supplied year, remaining quota, or paid flag.
-- Before enabling this policy, finish Google/Apple purchase validation, Supabase entitlements, restore purchases, account linking, and the bilingual quota UI. Keep restrictions disabled until all paths pass end-to-end tests.
+| Capability | Free | Pro (planned) |
+| --- | --- | --- |
+| Create, join, delete and manage groups | Unlimited | Unlimited |
+| Members and shared expenses | Unlimited | Unlimited |
+| Equal, exact, percentage and weighted splits | Included | Included |
+| Multi-currency expenses and agreed exchange rates | Included | Included |
+| Common Fund: contributions, purchases, targets, top-ups and refunds | Included | Included |
+| Repayment suggestions, confirmation, reversals | Included | Included |
+| Offline entry and syncing | Included | Included |
+| Manual receipt photo attachment | Included | Included |
+| On-device receipt OCR | Included, initially unrestricted | Included; future convenience enhancements |
+| Basic trip closing PDF and financial history | Included | Included |
+| Advanced analytics and comparison dashboards | Not included | Planned |
+| Advanced/custom-branded PDF layouts and deeper breakdowns | Not included | Planned |
+| CSV/spreadsheet bulk export and organiser productivity tools | Not included | Planned |
+| Advertising (only if introduced later) | May show ads | Ad-free |
 
-### Acceptance cases
+**Launch policy:** do not enforce OCR scan quotas or other new restrictions until there is a verifiable and reliable quota service. Existing OCR and current trip-closing PDF work remain free. Pro should enhance convenience, insights and presentation, not block the financial basics.
 
-1. Fresh Free account creates 3 groups; 4th is blocked with 3/3 usage and a clear reset date.
-2. Delete the first group: quota remains 3/3; a new group is still blocked.
-3. Join an unlimited number of other groups: quota unchanged.
-4. Two concurrent third/fourth group requests cannot both succeed.
-5. Failed group creations never consume a slot; network retries cannot double-count a successful request.
-6. Reset UTC year: Free user receives 3 new slots.
-7. Verified Pro and lifetime owners create unlimited groups; expiration never hides or locks financial history.
-8. Existing users are not retrospectively charged for already-created groups.
-9. Reinstall or sign out does not bypass quota for a permanent account.
-10. English and Simplified Chinese explain the cap and recovery, without Thai localization.
+**Pro scope is a roadmap, not shipped functionality.** Do not display subscription checkout or grant Pro until Google Play / App Store products, server verification, restore purchases and entitlements are working. Never downgrade or hide existing group data or settled financial history on expiry.
 
-## Fair-use feature policy
+## Product and safety principles
 
-Free must always retain viewing existing groups, expenses, repayment history, Common Fund balances and confirmed financial records, and access to export/backup where required to avoid data lock-in. **Never block reconciliation, repayment confirmations or member access to existing financial records behind a subscription.**
-
-Suggested launch differentiation:
-- Free: all current core features; modest new-group creation cap for *future* groups only (do not retroactively lock existing groups).
-- Pro: unlimited *new* groups, higher receipt OCR usage allowance, enhanced insights and presentation-only advanced reports.
-- If limits are introduced, enforce them on the backend (Supabase RPC/RLS), not by hiding buttons on the device; do not remove offline unsynced data.
-- A premium group feature should not force non-paying group members to subscribe simply to see or settle obligations.
+- Unlimited group creation, joining, member access and expenses stay free, even if Pro is cancelled.
+- Users can always view/export essential financial records, reconcile fund balances and confirm repayments without paying.
+- Existing Common Fund targets, top-ups and refunds stay free.
+- If advertising is introduced, it must not disrupt expense entry, settlement, receipt review, or critical confirmations.
+- Advanced reporting must add genuinely new insights rather than merely relabel an existing free report.
+- Any paid entitlement check must be verified on the server and must not depend on a locally stored paid flag.
+- Group creators and members must not be forced to subscribe to resolve financial obligations.
+- On-device OCR currently has no enforced quota; revisit usage caps only after measuring meaningful operating costs and user needs.
 
 ## Required before accepting any payment
 
