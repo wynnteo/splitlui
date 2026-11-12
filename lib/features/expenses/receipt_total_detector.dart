@@ -9,37 +9,47 @@ class ReceiptTotalCandidate {
   });
   final String amount;
   final String label;
-  final int score,lineIndex;
+  final int score, lineIndex;
 }
 
 class ReceiptTotalAnalysis {
   const ReceiptTotalAnalysis(this.candidates);
   final List<ReceiptTotalCandidate> candidates;
   ReceiptTotalCandidate? get suggested =>
-    candidates.isEmpty || candidates.first.score<7 ? null : candidates.first;
-  bool get ambiguous => candidates.length>1 &&
-    candidates[1].score>=7 &&
-    candidates.first.score-candidates[1].score<=1 &&
-    candidates.first.amount!=candidates[1].amount;
+    candidates.isEmpty || candidates.first.score < 7 ? null : candidates.first;
+  bool get ambiguous => candidates.length > 1 &&
+    candidates[1].score >= 7 &&
+    candidates.first.score - candidates[1].score <= 1 &&
+    candidates.first.amount != candidates[1].amount;
 }
 
 class ReceiptTotalDetector {
-  static final _money=RegExp(
+  static final _money = RegExp(
     r'(?<![A-Za-z0-9])(?:\d{1,3}(?:[.,]\d{3})+|\d{1,8})[.,]\d{2}(?!\d)');
-  static final _strong=RegExp(
+  static final _strong = RegExp(
     r'\b(GRAND\s+TOTAL|TOTAL\s+DUE|AMOUNT\s+DUE|NET\s+TOTAL|'
     r'TOTAL\s+PAYABLE|TOTAL\s+AMOUNT|BALANCE\s+DUE|AMOUNT\s+PAYABLE)\b',
     caseSensitive:false);
-  static final _total=RegExp(
-    r'\b(TOTAL|AMOUNT\s+PAID|PAYABLE)\b',caseSensitive:false);
-  static final _exclude=RegExp(
+  static final _total = RegExp(
+    r'\b(TOTAL|AMOUNT\s+PAID|PAYABLE)\b', caseSensitive:false);
+  static final _exclude = RegExp(
     r'\b(SUB\s*TOTAL|CHANGE|CASH\s+BACK|CASH\s+TENDERED|'
     r'TENDERED|DISCOUNT|SAVINGS|GST|VAT|SERVICE\s+CHARGE|'
     r'TAX|TIP|ROUNDING|POINTS|LOYALTY|UNIT\s+PRICE)\b',
     caseSensitive:false);
+  static final _shortMoney = RegExp(
+    r'(?<![A-Za-z0-9])\d{1,8}[.,]\d(?![\d.,])');
+  static final _wholeMoney = RegExp(
+    r'^\s*(?:(?:SGD|MYR|THB|USD|EUR|GBP|RM|S\$|\$|€|£|฿)\s*)?'
+    r'(\d{1,8})\s*$',
+    caseSensitive: false);
+  static final _valueLine = RegExp(
+    r'^\s*(?:(?:SGD|MYR|THB|USD|EUR|GBP|RM|S\$|\$|€|£|฿)\s*)?'
+    r'(\d{1,8}(?:[.,]\d{1,2})?)\s*$',
+    caseSensitive:false);
 
   static String? normalizeAmount(String input) {
-    var text=input.replaceAll(RegExp(r'\s'),'');
+    final text=input.replaceAll(RegExp(r'\s'),'');
     final comma=text.lastIndexOf(',');
     final dot=text.lastIndexOf('.');
     if(comma<0 && dot<0)return null;
@@ -50,10 +60,34 @@ class ReceiptTotalDetector {
     final fractional=text.substring(pos+1);
     if(!RegExp(r'^\d{1,8}$').hasMatch(integer) ||
        !RegExp(r'^\d{2}$').hasMatch(fractional))return null;
-    final cents=int.tryParse(integer);
+    final units=int.tryParse(integer);
     final decimals=int.tryParse(fractional);
-    if(cents==null || decimals==null || cents==0 && decimals==0)return null;
-    return '$cents.$fractional';
+    if(units==null || decimals==null || units==0 && decimals==0)return null;
+    return units.toString()+'.'+fractional;
+  }
+
+  static String? _normalizeShort(String input) {
+    final text=input.trim().replaceAll(',', '.');
+    final match=RegExp(r'^(\d{1,8})(?:\.(\d))?$').firstMatch(text);
+    if(match==null)return null;
+    final units=int.tryParse(match.group(1)!);
+    if(units==null || units==0 && (match.group(2)==null ||
+        match.group(2)=='0'))return null;
+    final decimals=match.group(2);
+    return units.toString()+'.'+(decimals==null?'00':decimals+'0');
+  }
+
+  static List<String> _labelledAmounts(String raw) {
+    final exact=_money.allMatches(raw).map((m)=>m.group(0)!).toList();
+    if(exact.isNotEmpty)return exact;
+    final oneDecimal=_shortMoney.allMatches(raw).map((m)=>m.group(0)!).toList();
+    if(oneDecimal.isNotEmpty)return oneDecimal;
+    // For an integer amount the numeric text must be the only remaining
+    // value after removing the explicit TOTAL label and punctuation.
+    final remaining=raw.replaceAll(_strong,'').replaceAll(_total,'')
+      .replaceAll(RegExp(r'^[\s:=-]+'),'').trim();
+    final whole=_wholeMoney.firstMatch(remaining);
+    return whole==null?const []:[whole.group(1)!];
   }
 
   static ReceiptTotalAnalysis parse(String ocrText) {
@@ -67,25 +101,23 @@ class ReceiptTotalDetector {
       if(!strong&&!total)continue;
       final label=raw.trim().replaceAll(RegExp(r'\s+'),' ');
       final score=strong?12:8;
-      var rawAmounts=_money.allMatches(raw).map((m)=>m.group(0)!).toList();
-      // Common thermal receipts print TOTAL and its number on next line.
+      var rawAmounts=_labelledAmounts(raw);
       if(rawAmounts.isEmpty && i+1<lines.length &&
           !_exclude.hasMatch(lines[i+1]) &&
           !_total.hasMatch(lines[i+1]) &&
           !_strong.hasMatch(lines[i+1])) {
-        rawAmounts=_money.allMatches(lines[i+1])
-          .map((m)=>m.group(0)!).toList();
+        // If the total value appears on the next line, require the entire
+        // next line to contain only one amount and optional currency.
+        final value=_valueLine.firstMatch(lines[i+1].trim());
+        if(value!=null)rawAmounts=[value.group(1)!];
       }
-      // Multiple numbers on a total line are ambiguous; require review.
       for(final rawAmount in rawAmounts) {
-        final amount=normalizeAmount(rawAmount);
+        final amount=normalizeAmount(rawAmount) ?? _normalizeShort(rawAmount);
         if(amount==null)continue;
         found.add(ReceiptTotalCandidate(
           amount:amount,label:label,score:score,lineIndex:i));
       }
     }
-    // Later totals tend to be final after item subtotals, but never let a
-    // weak TOTAL override a stronger AMOUNT DUE. De-duplicate numbers.
     found.sort((a,b) {
       final priority=b.score.compareTo(a.score);
       return priority!=0 ? priority : b.lineIndex.compareTo(a.lineIndex);

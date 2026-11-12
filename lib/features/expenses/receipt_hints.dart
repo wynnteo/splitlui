@@ -3,13 +3,14 @@
 class ReceiptHints {
   const ReceiptHints({
     this.merchant,
+    this.itemDescription,
     this.currency,
     this.date,
     this.total,
     this.dateNeedsReview=false,
   });
 
-  final String? merchant,currency,total;
+  final String? merchant,itemDescription,currency,total;
   final DateTime? date;
   final bool dateNeedsReview;
 
@@ -32,6 +33,51 @@ class ReceiptHints {
       merchant=line.replaceAll(RegExp(r'\s+'),' ');
       break;
     }
+
+    // Prefer a priced receipt item over the shop address as the title.
+    // Suggest only one uniquely detected paid item; multiple purchases
+    // are intentionally left for manual review.
+    final itemLine=RegExp(
+      r'^\s*\d{1,2}\s+(.+?)\s+'
+      r'(?:(?:S\$|\$|RM|SGD|MYR|THB)\s*)?'
+      r'(\d{1,7}[.,]\d{2})\s*$',
+      caseSensitive:false);
+    final itemOnly=RegExp(r'^\s*\d{1,2}\s+(.+?)\s*$');
+    final priceOnly=RegExp(
+      r'^\s*(?:(?:S\$|\$|RM|SGD|MYR|THB)\s*)?'
+      r'(\d{1,7}[.,]\d{2})\s*$',
+      caseSensitive:false);
+    final nonItem=RegExp(
+      r'\b(TOTAL|GST|VAT|TAX|SERVICE|CHANGE|DISCOUNT|'
+      r'SUBTOTAL|CASH|QUEUE|ORDER|DATE|TIME|PAYMENT)\b',
+      caseSensitive:false);
+    bool isPurchase(String description,String price) {
+      final name=description.trim();
+      if(name.length<5 || name.length>110 || nonItem.hasMatch(name) ||
+          !RegExp(r'[A-Za-z\u4e00-\u9fff]').hasMatch(name))return false;
+      final value=double.tryParse(price.replaceAll(',', '.'));
+      return value!=null && value>0;
+    }
+    final paidItems=<String>{};
+    for(var i=0;i<lines.length;i++) {
+      final line=lines[i];
+      final item=itemLine.firstMatch(line);
+      if(item!=null) {
+        if(isPurchase(item.group(1)!,item.group(2)!)) {
+          paidItems.add(item.group(1)!.trim()
+            .replaceAll(RegExp(r'\s+'),' '));
+        }
+      } else if(i+1<lines.length) {
+        final name=itemOnly.firstMatch(line);
+        final price=priceOnly.firstMatch(lines[i+1]);
+        if(name!=null && price!=null &&
+            isPurchase(name.group(1)!,price.group(1)!)) {
+          paidItems.add(name.group(1)!.trim()
+            .replaceAll(RegExp(r'\s+'),' '));
+        }
+      }
+    }
+    final itemDescription=paidItems.length==1?paidItems.first:null;
 
     final upper=text.toUpperCase();
     // A receipt may contain multiple different explicit currencies.
@@ -75,7 +121,8 @@ class ReceiptHints {
       dateNeedsReview=date!=null && day<=12;
     }
     return ReceiptHints(
-      merchant:merchant,currency:currency,date:date,
+      merchant:merchant,itemDescription:itemDescription,
+      currency:currency,date:date,
       dateNeedsReview:dateNeedsReview);
   }
 
