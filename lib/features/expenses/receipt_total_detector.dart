@@ -34,7 +34,7 @@ class ReceiptTotalDetector {
     r'\b(TOTAL|AMOUNT\s+PAID|PAYABLE)\b', caseSensitive:false);
   static final _exclude = RegExp(
     r'\b(SUB\s*TOTAL|CHANGE|CASH\s+BACK|CASH\s+TENDERED|'
-    r'TENDERED|DISCOUNT|SAVINGS|GST|VAT|SERVICE\s+CHARGE|'
+    r'TENDERED|DISCOUNT|SAVINGS|SERVICE\s+CHARGE|
     r'TAX|TIP|ROUNDING|POINTS|LOYALTY|UNIT\s+PRICE)\b',
     caseSensitive:false);
   static final _shortMoney = RegExp(
@@ -95,7 +95,12 @@ class ReceiptTotalDetector {
     final found=<ReceiptTotalCandidate>[];
     for(var i=0;i<lines.length;i++) {
       final raw=lines[i],upper=raw.toUpperCase();
+      // A final amount can legitimately say 'TOTAL INCL. GST'.
+      // Exclude tax-only rows, but do not discard labelled totals.
       if(_exclude.hasMatch(upper))continue;
+      if(RegExp(r'^\s*(GST|VAT|TAX)\b',caseSensitive:false)
+          .hasMatch(raw) && !_total.hasMatch(upper) &&
+          !_strong.hasMatch(upper))continue;
       final strong=_strong.hasMatch(upper);
       final total=!strong&&_total.hasMatch(upper);
       if(!strong&&!total)continue;
@@ -116,6 +121,33 @@ class ReceiptTotalDetector {
         if(amount==null)continue;
         found.add(ReceiptTotalCandidate(
           amount:amount,label:label,score:score,lineIndex:i));
+      }
+    }
+    // If OCR mangles the word TOTAL, repeated matching amounts still
+    // provide a reviewable hint. Never autofill these unlabeled values.
+    if(found.isEmpty && lines.isNotEmpty) {
+      final counts=<String,int>{};
+      final lastLine=<String,int>{};
+      for(var i=0;i<lines.length;i++) {
+        if(_exclude.hasMatch(lines[i].toUpperCase()) ||
+            RegExp(r'^\s*(GST|VAT|TAX)\b',caseSensitive:false)
+              .hasMatch(lines[i]))continue;
+        for(final hit in _money.allMatches(lines[i])) {
+          final amount=normalizeAmount(hit.group(0)!);
+          if(amount==null)continue;
+          counts[amount]=(counts[amount]??0)+1;
+          lastLine[amount]=i;
+        }
+      }
+      for(final entry in counts.entries) {
+        if(entry.value>=2) {
+          found.add(ReceiptTotalCandidate(
+            amount:entry.key,
+            label:'Repeated amount — tap to review',
+            score:4,
+            lineIndex:lastLine[entry.key]!,
+          ));
+        }
       }
     }
     found.sort((a,b) {
