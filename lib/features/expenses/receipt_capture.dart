@@ -10,11 +10,13 @@ import 'receipt_total_detector.dart';
 
 class ReceiptDraft {
   const ReceiptDraft(this.jpeg, this.suggestedTotal, this.hints,
-    this.totalAnalysis);
+    this.totalAnalysis, {this.ocrFailed=false, this.recognizedText=''});
   final Uint8List jpeg;
   final String? suggestedTotal;
   final ReceiptHints hints;
   final ReceiptTotalAnalysis totalAnalysis;
+  final bool ocrFailed;
+  final String recognizedText;
 }
 
 /// OCR hints are not trusted accounting values; always require user review.
@@ -33,19 +35,23 @@ class ReceiptCapture {
       throw StateError('Receipt image could not be compressed under 5 MB');
     }
     String text = '';
+    var ocrFailed=false;
     final recogniser = TextRecognizer(script: TextRecognitionScript.latin);
     try {
       text = (await recogniser.processImage(
         InputImage.fromFilePath(photo.path))).text;
     } catch (_) {
-      // Keep the receipt image even when OCR cannot read the text.
+      // Preserve the image, but do not misreport a recogniser failure as
+      // a receipt with no TOTAL. Avoid logging sensitive receipt text.
+      ocrFailed=true;
     } finally {
       await recogniser.close();
     }
     final totals=ReceiptTotalDetector.parse(text);
     return ReceiptDraft(Uint8List.fromList(compressed),
       totals.ambiguous ? null : totals.suggested?.amount,
-      ReceiptHints.parse(text), totals);
+      ReceiptHints.parse(text), totals,
+      ocrFailed:ocrFailed,recognizedText:text);
   }
 
   static String? extractTotal(String text) {
