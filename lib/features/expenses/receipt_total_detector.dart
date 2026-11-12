@@ -34,7 +34,7 @@ class ReceiptTotalDetector {
     r'\b(TOTAL|AMOUNT\s+PAID|PAYABLE)\b', caseSensitive:false);
   static final _exclude = RegExp(
     r'\b(SUB\s*TOTAL|CHANGE|CASH\s+BACK|CASH\s+TENDERED|'
-    r'TENDERED|DISCOUNT|SAVINGS|SERVICE\s+CHARGE|
+    r'TENDERED|DISCOUNT|SAVINGS|SERVICE\s+CHARGE|'
     r'TAX|TIP|ROUNDING|POINTS|LOYALTY|UNIT\s+PRICE)\b',
     caseSensitive:false);
   static final _shortMoney = RegExp(
