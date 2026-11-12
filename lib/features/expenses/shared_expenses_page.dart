@@ -1196,8 +1196,13 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                   Text(l.receiptSuggestionsTitle,
                     style:Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height:6),
-                  Text(l.receiptSuggestionsSubtitle,
-                    style:Theme.of(context).textTheme.bodySmall),
+                  if(receipt!.hints.itemDescription != null ||
+                      receipt!.hints.merchant != null ||
+                      receipt!.hints.currency != null ||
+                      receipt!.hints.date != null ||
+                      receipt!.totalAnalysis.candidates.isNotEmpty)
+                    Text(l.receiptSuggestionsSubtitle,
+                      style:Theme.of(context).textTheme.bodySmall),
                   if(receipt!.ocrFailed)
                     Padding(
                       padding:const EdgeInsets.only(top:8),
