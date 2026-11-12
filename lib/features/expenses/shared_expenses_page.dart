@@ -761,8 +761,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
         if (amount.text.trim().isEmpty && picked.suggestedTotal != null) {
           amount.text = picked.suggestedTotal!;
         }
-        if (title.text.trim().isEmpty && picked.hints.merchant != null) {
-          title.text = picked.hints.merchant!;
+        if (title.text.trim().isEmpty) {
+          title.text = picked.hints.itemDescription ??
+              picked.hints.merchant ?? '';
         }
         final detected = picked.hints.currency;
         if (!currencyManuallySet && detected != null &&
@@ -1198,6 +1199,19 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                   Text(l.receiptSuggestionsSubtitle,
                     style:Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height:10),
+                  if(receipt!.hints.itemDescription != null) ...[
+                    Text(l.expenseTitle,
+                      style:Theme.of(context).textTheme.labelMedium),
+                    const SizedBox(height:4),
+                    Align(alignment:Alignment.centerLeft,
+                      child:ActionChip(
+                        avatar:const Icon(Icons.restaurant_menu_outlined,size:18),
+                        label:Text(receipt!.hints.itemDescription!,
+                          overflow:TextOverflow.ellipsis),
+                        onPressed:saving?null:()=>applyReceiptMerchant(
+                          receipt!.hints.itemDescription!))),
+                    const SizedBox(height:8),
+                  ],
                   if(receipt!.hints.merchant != null) ...[
                     Text(l.expenseTitle,
                       style:Theme.of(context).textTheme.labelMedium),
