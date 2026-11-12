@@ -1198,6 +1198,54 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                   const SizedBox(height:6),
                   Text(l.receiptSuggestionsSubtitle,
                     style:Theme.of(context).textTheme.bodySmall),
+                  if(receipt!.ocrFailed)
+                    Padding(
+                      padding:const EdgeInsets.only(top:8),
+                      child:Text(
+                        Localizations.localeOf(context).languageCode=='zh'
+                          ? '文字识别失败，请重新拍摄或手动输入金额。'
+                          : 'Text recognition failed. Please retake the photo or enter the amount manually.',
+                        style:TextStyle(color:Theme.of(context).colorScheme.error),
+                      ),
+                    )
+                  else if(receipt!.recognizedText.trim().isEmpty)
+                    Padding(
+                      padding:const EdgeInsets.only(top:8),
+                      child:Text(
+                        Localizations.localeOf(context).languageCode=='zh'
+                          ? '图片中未识别到文字，请尝试拍得更清晰。'
+                          : 'No text was recognised. Try a clearer photo with the receipt filling the frame.',
+                        style:Theme.of(context).textTheme.bodySmall,
+                      ),
+                    )
+                  else ...[
+                    if(receipt!.totalAnalysis.candidates.any(
+                        (candidate)=>candidate.score<7))
+                      Padding(
+                        padding:const EdgeInsets.only(top:8),
+                        child:Text(
+                          Localizations.localeOf(context).languageCode=='zh'
+                            ? '找到重复金额，但无法确认总额。请点击正确的金额。'
+                            : 'Repeated amounts found, but the total is uncertain. Tap the correct amount to use it.',
+                          style:Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ExpansionTile(
+                      tilePadding:EdgeInsets.zero,
+                      title:Text(
+                        Localizations.localeOf(context).languageCode=='zh'
+                          ? '查看识别到的收据文字'
+                          : 'View recognised receipt text',
+                        style:Theme.of(context).textTheme.bodySmall,
+                      ),
+                      children:[
+                        Padding(
+                          padding:const EdgeInsets.all(12),
+                          child:SelectableText(receipt!.recognizedText),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height:10),
                   if(receipt!.hints.itemDescription != null) ...[
                     Text(l.expenseTitle,
@@ -1232,7 +1280,9 @@ class _AddSharedExpensePageState extends State<AddSharedExpensePage> {
                       child:Text(l.receiptMultipleTotalsWarning,
                         style:TextStyle(
                           color:Theme.of(context).colorScheme.error))),
-                  if(receipt!.totalAnalysis.candidates.isEmpty)
+                  if(receipt!.totalAnalysis.candidates.isEmpty &&
+                      !receipt!.ocrFailed &&
+                      receipt!.recognizedText.trim().isNotEmpty)
                     Padding(padding:const EdgeInsets.only(top:4),
                       child:Text(l.receiptNoTotalFound,
                         style:Theme.of(context).textTheme.bodySmall)),
